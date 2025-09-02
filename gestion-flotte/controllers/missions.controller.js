@@ -494,7 +494,7 @@ exports.signalerIncident = async (req, res) => {
       date_envoi: new Date()
     }));
 
-    await db.notifications.bulkCreate(notifications);
+    await db.Notification.bulkCreate(notifications);
 
     res.status(201).json({
       message: "Signalement enregistré" + (mission_continue === "non" ? " et mission bloquée" : ""),
