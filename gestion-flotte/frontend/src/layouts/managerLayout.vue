@@ -1,49 +1,63 @@
 <template>
-  <div id="demandeur-layout" class="d-flex flex-column vh-100">
+  <div id="chef-layout" class="d-flex flex-column vh-100">
     <!-- Header -->
     <header class="header d-flex align-items-center justify-content-between px-4 shadow-sm">
       <div class="logo d-flex align-items-center">
         <img src="@/assets/logo.png" alt="Logo Sonatrach" class="logo-img" />
-        <h1 class="ms-2 text-sonatrach">Gestion Parc </h1>
+        <h1 class="ms-2 text-sonatrach">Gestion Parc - Chef</h1>
       </div>
 
+      <!-- Profil + Notifications + Déconnexion -->
       <nav class="d-flex align-items-center gap-4 position-relative">
         <!-- Profil -->
-        <div class="profil d-flex align-items-center me-2" style="cursor: pointer" @click="$router.push('/chefDepartement/profil')">
+        <div class="profil d-flex align-items-center me-2">
           <img :src="photoUrl" alt="Profil" class="photo-profil rounded-circle me-2" />
-          <span class="fw-semibold d-none d-md-inline">{{ user.prenom }} {{ user.nom }}</span>
+          <span class="fw-semibold d-none d-md-inline">{{ user?.prenom }} {{ user?.nom }}</span>
         </div>
 
         <!-- Notifications -->
         <div class="notification position-relative" @click="toggleNotifications">
           <i class="bi bi-bell-fill fs-5 text-dark" style="cursor: pointer;"></i>
-          <span v-if="unreadCount > 0" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+          <span
+            v-if="unreadCount > 0"
+            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+          >
             {{ unreadCount }}
           </span>
-          <div v-if="showNotifications" class="notification-dropdown shadow-sm">
-            <div v-if="notifications.length === 0" class="text-muted px-3 py-2">Aucune notification</div>
-            <ul class="list-group list-group-flush">
-              <li
-                v-for="notif in notifications"
-                :key="notif.id"
-                class="list-group-item small"
-                @click="handleNotificationClick(notif)"
-                style="cursor: pointer;"
-              >
-                <strong>
-                  <i v-if="notif.titre.toLowerCase().includes('accepter')" class="bi bi-check-circle-fill text-success me-1"></i>
-                  {{ notif.titre }}
-                </strong><br />
-                {{ notif.message }}
-                <br />
-                <small class="text-muted">{{ formatDate(notif.date_envoi) }}</small>
-              </li>
-            </ul>
+
+          <!-- Dropdown notifications -->
+          <div v-if="showNotifications" class="notification-dropdown shadow">
+            <div class="fw-bold px-3 pt-2 pb-1 text-dark border-bottom">🔔 Notifications</div>
+
+            <div v-if="notifications.length === 0" class="text-muted px-3 py-3 text-center small">
+              Aucune notification
+            </div>
+
+            <div
+              v-for="notif in notifications"
+              :key="notif.id"
+              class="notif-item d-flex gap-2 align-items-start px-3 py-2 border-bottom hover-bg"
+              @click="handleNotifClick(notif)"
+              :class="{ 'bg-light': !notif.lu }"
+            >
+              <i class="bi bi-envelope-fill text-primary mt-1"></i>
+
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold small text-dark">{{ notif.titre || 'Notification' }}</span>
+                  <span v-if="!notif.lu" class="badge bg-danger text-white ms-2">Nouveau</span>
+                </div>
+                <div class="small text-muted">{{ notif.message }}</div>
+                <div class="text-muted small mt-1">{{ formatDate(notif.date_envoi) }}</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Déconnexion -->
-        <button @click="logout" class="btn btn-outline-danger btn-sm logout-btn">Déconnexion</button>
+        <!-- Logout -->
+        <button @click="logout" class="btn btn-outline-danger btn-sm logout-btn" aria-label="Déconnexion">
+          Déconnexion
+        </button>
       </nav>
     </header>
 
@@ -54,12 +68,30 @@
         <ul class="nav flex-column py-3">
           <li class="nav-item">
             <router-link to="/chefDepartement/dashboard" class="nav-link" exact-active-class="active">
-              <i class="bi bi-speedometer2 me-2"></i> Tableau de bord
+              <i class="bi bi-bar-chart-line me-2"></i> Tableau de bord
+            </router-link>
+          </li>
+          <!-- Nouvelle section Demandes d’intervention -->
+          <li class="nav-item">
+            <router-link to="/chefDepartement/interventions" class="nav-link" exact-active-class="active">
+              <i class="bi bi-wrench-adjustable me-2"></i> Demandes d’intervention
+            </router-link>
+          </li>
+
+          <!-- Nouvelle section Historique -->
+          <li class="nav-item">
+            <router-link to="/chefDepartement/historique" class="nav-link" exact-active-class="active">
+              <i class="bi bi-clock-history me-2"></i> Historique
             </router-link>
           </li>
           <li class="nav-item">
+            <router-link to="/chefDepartement/notifications" class="nav-link" exact-active-class="active">
+              <i class="bi bi-bell me-2"></i> Notifications 
+            </router-link>
+          </li>
+          <li class="nav-item mt-auto">
             <router-link to="/chefDepartement/profil" class="nav-link" exact-active-class="active">
-              <i class="bi bi-person-circle me-2"></i> Mon Profil
+              <i class="bi bi-person me-2"></i> Mon Profil
             </router-link>
           </li>
         </ul>
@@ -74,14 +106,12 @@
 </template>
 
 <script>
-import axios from "axios";
-
 export default {
-  name: "DemandeurLayout",
+  name: "ChefLayout",
   data() {
     return {
       user: {},
-      photoUrl: '',
+      photoUrl: "https://via.placeholder.com/35x35?text=👤",
       notifications: [],
       showNotifications: false,
       unreadCount: 0,
@@ -89,16 +119,24 @@ export default {
   },
   created() {
     const userStr = localStorage.getItem("user");
-    if (userStr) {
+    const token = localStorage.getItem("token");
+
+    if (userStr && token) {
       this.user = JSON.parse(userStr);
-      this.photoUrl = this.user.photo
+      this.photoUrl = this.user?.photo
         ? `http://localhost:3000/uploads/${this.user.photo}`
-        : 'https://via.placeholder.com/35x35?text=👤';
+        : "https://via.placeholder.com/35x35?text=👤";
 
       this.fetchNotifications();
     }
   },
   methods: {
+    formatDate(date) {
+      return new Date(date).toLocaleString("fr-FR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    },
     logout() {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
@@ -106,53 +144,54 @@ export default {
     },
     toggleNotifications() {
       this.showNotifications = !this.showNotifications;
-      if (this.showNotifications && this.unreadCount > 0) {
-        this.markAllAsRead();
+      if (this.showNotifications) {
+        this.fetchNotifications();
       }
     },
-    async fetchNotifications() {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(`http://localhost:3000/api/notifications/${this.user.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+    fetchNotifications() {
+      const token = localStorage.getItem("token");
+      if (!this.user?.id || !token) return;
+
+      fetch(`http://localhost:3000/api/notifications/${this.user.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          this.notifications = data;
+          this.unreadCount = data.filter((n) => !n.lu).length;
+        })
+        .catch((err) => {
+          console.error("❌ Erreur récupération notifications :", err);
         });
-        this.notifications = res.data;
-        this.unreadCount = this.notifications.filter(n => !n.lu).length;
-      } catch (error) {
-        console.error("❌ Erreur notifications :", error);
-      }
     },
-    async markAllAsRead() {
-      try {
-        await axios.put(`http://localhost:3000/api/notifications/${this.user.id}/lu`, {}, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        });
-        this.notifications.forEach(n => n.lu = true);
-        this.unreadCount = 0;
-      } catch (error) {
-        console.error("❌ Erreur marquage notifications :", error);
-      }
+    handleNotifClick(notif) {
+      const token = localStorage.getItem("token");
+
+      fetch(`http://localhost:3000/api/notifications/${notif.id}/lu`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(() => {
+        notif.lu = true;
+        this.unreadCount = this.notifications.filter((n) => !n.lu).length;
+
+        if (notif.titre === "Nouvelle intervention") {
+          this.$router.push("/chefDepartement/interventions");
+        } else {
+          this.$router.push("/chefDepartement/dashboard");
+        }
+
+        this.showNotifications = false;
+      });
     },
-    formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleString("fr-FR");
-    },
-    handleNotificationClick(notif) {
-      const titre = notif.titre.toLowerCase();
-      if (titre.includes("accepter")) {
-        this.$router.push("/demandeur/profil");
-      } else {
-        console.log("Notification cliquée :", notif);
-        // Autres actions possibles ici
-      }
-    }
-  }
+  },
 };
 </script>
 
 
 <style scoped>
-#demandeur-layout {
+#chef-layout {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #f9f9f9;
   color: #333;
@@ -182,6 +221,12 @@ export default {
   font-weight: 700;
   font-size: 1.25rem;
   user-select: none;
+}
+
+.photo-profil {
+  width: 35px;
+  height: 35px;
+  object-fit: cover;
 }
 
 .sidebar {
@@ -215,7 +260,6 @@ export default {
 .nav-link:focus-visible {
   background-color: #fff3e0;
   color: #f7941e;
-  outline: none;
   border-left-color: #f7941e;
 }
 
@@ -230,6 +274,8 @@ export default {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
 .content::-webkit-scrollbar {
@@ -247,37 +293,16 @@ export default {
   background: #d37304;
 }
 
-.photo-profil {
-  width: 35px;
-  height: 35px;
-  object-fit: cover;
-}
-
 .logout-btn {
   cursor: pointer;
   font-weight: 600;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
-
 .logout-btn:hover,
 .logout-btn:focus-visible {
   background-color: #d9534f;
   color: white;
   outline: none;
-}
-
-/* Notifications Dropdown */
-.notification-dropdown {
-  position: absolute;
-  right: 0;
-  top: 110%;
-  width: 260px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  z-index: 200;
-  max-height: 200px;
-  overflow-y: auto;
 }
 
 /* Responsive */
@@ -292,7 +317,6 @@ export default {
   }
   .nav-link i {
     font-size: 1.5rem;
-    min-width: auto;
   }
   .text-sonatrach,
   .logo img {
@@ -300,17 +324,31 @@ export default {
   }
 }
 
-.notification-dropdown {
-  position: absolute;
-  right: 0;
-  top: 110%;
-  width: 300px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  z-index: 200;
-  max-height: 300px;
-  overflow-y: auto;
+i {
+  font-size: 1.2rem;
 }
 
+.notification-dropdown {
+  position: absolute;
+  top: 35px;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 320px;
+  max-height: 380px;
+  overflow-y: auto;
+  z-index: 999;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  padding: 0.5rem;
+}
+
+.notif-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.notif-item:hover,
+.hover-bg:hover {
+  background-color: #f7f7f7;
+}
 </style>

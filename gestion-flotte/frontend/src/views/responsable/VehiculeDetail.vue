@@ -28,10 +28,14 @@
             </p>
 
             <!-- Stats rapides -->
-            <div class="stats-grid mb-4">
+            <div class="stats-grid mb-2">
               <div class="stat-item">
                 <div class="stat-value">{{ formatNumber(vehicule.kilometrage) }}</div>
                 <div class="stat-label">Kilométrage</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value">{{ formatNumber(vehicule.prochain_kilometrage) }}</div>
+                <div class="stat-label">Prochène Kilométrage</div>
               </div>
               <div class="stat-item">
                 <div class="stat-value">{{ new Date(vehicule.date_achat).getFullYear() }}</div>
@@ -299,54 +303,58 @@
               </div>
             </div>
 
-            <!-- Maintenance -->
-            <div v-show="activeTab === 'maintenance'">
-              <div class="d-flex justify-content-between align-items-center mb-4">
-                <h3 class="h5 mb-0">
-                  <i class="bi bi-tools text-primary me-2"></i>
-                  Historique de maintenance
-                </h3>
-                <button class="btn btn-sm btn-primary" @click="openMaintenanceModal(null)">
-                  <i class="bi bi-plus me-1"></i> Ajouter
-                </button>
-              </div>
+            <!-- Interventions -->
+<div v-show="activeTab === 'interventions'">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="h5 mb-0">
+      <i class="bi bi-tools text-primary me-2"></i>
+      Historique des interventions
+    </h3>
+    <button class="btn btn-sm btn-primary" @click="openInterventionModal(null)">
+      <i class="bi bi-plus me-1"></i> Ajouter
+    </button>
+  </div>
 
-              <div class="table-responsive" v-if="maintenance.length">
-                <table class="table table-hover align-middle">
-                  <thead>
-                    <tr>
-                      <th>Type principal</th>
-                      <th>Catégorie</th>
-                      <th>Date intervention</th>
-                      <th>Coût</th>
-                      <th>Description</th>
-                      <th>Garage</th>
-                      <th class="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in maintenance" :key="item.id">
-                      <td>{{ item.type_principal }}</td>
-                      <td>{{ item.categorie }}</td>
-                      <td>{{ formatDate(item.date_intervention) }}</td>
-                      <td>{{ formatNumber(item.cout) }} €</td>
-                      <td>{{ item.description?.substring(0, 50) }}{{ item.description?.length > 50 ? '...' : '' }}</td>
-                      <td>{{ item.garage_nom }}</td>
-                      <td class="text-end">
-                        <button class="btn btn-sm btn-outline-primary" @click="openMaintenanceDetailsModal(item)">
-                          <i class="bi bi-eye"></i> Détails
-                        </button>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+  <div class="table-responsive" v-if="interventions.length">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Type principal</th>
+          <th>Catégorie</th>
+          <th>Date intervention</th>
+          <th>Coût</th>
+          <th>Description maintenance</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in interventions" :key="item.id">
+          <td>
+            {{ item.type_demande || '-' }}
+          </td>
+          <td>{{ item.maintenance?.type_principal || '-' }}</td>
+          <td>{{ item.maintenance?.categorie || '-' }}</td>
+          <td>{{ formatDate(item.date_en_cours || item.date_prevue) }}</td>
+          <td>{{ formatNumber(item.cout) }} €</td>
+          <td>{{ item.maintenance?.observation?.substring(0,50) }}{{ item.maintenance?.observation?.length > 50 ? '...' : '' }}</td>
+          
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" @click="openInterventionDetailsModal(item)">
+              <i class="bi bi-eye"></i> Modifier
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-              <div v-else class="empty-state text-center text-muted py-4">
-                <i class="bi bi-tools fs-2"></i>
-                <p class="mt-2 mb-0">Aucune maintenance enregistrée</p>
-              </div>
-            </div>
+  <div class="empty-state text-center text-muted py-4" v-else>
+    <i class="bi bi-tools fs-2"></i>
+    <p class="mt-2 mb-0">Aucune intervention enregistrée</p>
+  </div>
+</div>
+
           </div>
         </div>
       </div>
@@ -550,61 +558,104 @@
       </div>
     </div>
 
-    <!-- Modal détails maintenance -->
-    <div v-if="showMaintenanceModal" class="modal-backdrop show"></div>
-    <div v-if="showMaintenanceModal" class="modal show d-block" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              <i class="bi bi-tools text-primary me-2"></i>
-              {{ currentMaintenance.id ? 'Détails' : 'Ajouter' }} maintenance
-            </h5>
-            <button type="button" class="btn-close" @click="closeModal"></button>
+    <!-- Modal Interventions -->
+<div v-if="showInterventionModal" class="modal-backdrop show"></div>
+<div v-if="showInterventionModal" class="modal show d-block" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="bi bi-tools text-primary me-2"></i>
+          {{ currentIntervention?.id ? 'Détails' : 'Ajouter' }}
+        </h5>
+        <button type="button" class="btn-close" @click="closeModal"></button>
+      </div>
+      <div class="modal-body">
+        <form @submit.prevent="saveIntervention">
+          <!-- Maintenance -->
+          <h6 class="mb-3">Maintenance</h6>
+          <div class="mb-3">
+            <label class="form-label">Type Principal</label>
+            <select v-model="currentIntervention.maintenance.type_principal" class="form-select" required>
+              <option disabled value="">-- Sélectionner --</option>
+              <option value="Préventive">Préventive</option>
+              <option value="Curative">Curative</option>
+            </select>
           </div>
-          <div class="modal-body">
-            <form @submit.prevent="saveMaintenance">
-              <div class="mb-3">
-                <label for="type_principal" class="form-label">Type Principal</label>
-                <select v-model="currentMaintenance.type_principal" id="type_principal" class="form-select" required>
-                  <option disabled value="">-- Sélectionner --</option>
-                  <option value="Préventive">Préventive</option>
-                  <option value="Curative">Curative</option>
-                </select>
-              </div>
+          <div class="mb-3">
+            <label class="form-label">Catégorie</label>
+            <select v-model="currentIntervention.maintenance.categorie" class="form-select" required>
+              <option disabled value="">-- Choisir une catégorie --</option>
+              <option v-for="cat in filteredCategories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observation</label>
+            <textarea v-model="currentIntervention.maintenance.observation" class="form-control" rows="2"></textarea>
+          </div>
 
-              <div class="mb-3">
-                <label for="categorie" class="form-label">Catégorie</label>
-                <select v-model="currentMaintenance.categorie" id="categorie" class="form-select" required>
-                  <option disabled value="">-- Choisir une catégorie --</option>
-                  <option v-for="cat in filteredCategories" :key="cat" :value="cat">{{ cat }}</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Date</label>
-                <input v-model="currentMaintenance.date_intervention" type="date" class="form-control" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Coût (€)</label>
-                <input v-model="currentMaintenance.cout" type="number" class="form-control" required>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea v-model="currentMaintenance.description" class="form-control" rows="3" required></textarea>
-              </div>
-              <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" class="btn btn-outline-secondary" @click="closeModal">
-                  Annuler
-                </button>
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-circle me-1"></i> Enregistrer
-                </button>
-              </div>
-            </form>
+          <!-- Intervention -->
+          <h6 class="mt-4 mb-3">Intervention</h6>
+          <div class="mb-3">
+            <label class="form-label">Date prévue</label>
+            <input v-model="currentIntervention.date_prevue" type="date" class="form-control" required>
           </div>
-        </div>
+          <div class="mb-3">
+            <label class="form-label">Date en cours</label>
+            <input v-model="currentIntervention.date_en_cours" type="date" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Coût (€)</label>
+            <input v-model="currentIntervention.cout" type="number" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fichier PDF</label>
+            <input type="file" @change="handleFactureFileChange" class="form-control">
+            <div v-if="currentIntervention.fichier_pdf" class="mt-1">
+              <a :href="`http://localhost:3000${currentIntervention.fichier_pdf}`" target="_blank">
+                Voir le PDF actuel
+              </a>
+            </div>
+          </div>
+
+          <!-- Achat -->
+          <h6 class="mt-4 mb-3">Achat</h6>
+          <div class="mb-3">
+            <label class="form-label">Fournisseur</label>
+            <input v-model="currentIntervention.achat.fournisseur" type="text" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description achat</label>
+            <textarea v-model="currentIntervention.achat.description" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Délai</label>
+            <input v-model="currentIntervention.achat.delai" type="date" class="form-control">
+          </div>
+          <div v-if="currentIntervention.achat.piece?.length">
+            <h6>Pièces</h6>
+            <ul class="list-group">
+              <li class="list-group-item" v-for="p in currentIntervention.achat.piece" :key="p.id">
+                {{ p.nom_piece }} - Qté: {{ p.quantite }} - Prix: {{ formatNumber(p.prix_unitaire) }} €
+                <div v-if="p.observation">Obs: {{ p.observation }}</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-outline-secondary" @click="closeModal">Annuler</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-1"></i> Enregistrer
+            </button>
+          </div>
+        </form>
       </div>
     </div>
+  </div>
+</div>
+
+
   </div>
 </template>
 
@@ -630,20 +681,20 @@ export default {
       documents: [],
       missions: [],
       checklist_controles: [],
-      maintenance: [],
+      interventions: [],
       activeTab: 'infos',
       tabs: [
         { id: 'infos', label: 'Informations', icon:'bi bi-info-circle'},
         { id: 'documents', label: 'Documents', icon: 'bi-file-earmark-text' },
         { id: 'missions', label: 'Missions', icon: 'bi-calendar-check' },
         { id: 'controles', label: 'Contrôles', icon: 'bi-clipboard-check' },
-        { id: 'maintenance', label: 'Maintenance', icon: 'bi-tools' }
+        { id: 'interventions', label: 'Interventions', icon: 'bi-tools' }
       ],
       showVehicleModal: false,
       showDocumentModal: false,
       showMissionModal: false,
       showControlModal: false,
-      showMaintenanceModal: false,
+      showInterventionModal: false,
       selectedMission: null,
 
       editVehicle: {},
@@ -651,17 +702,26 @@ export default {
       newDocumentFile: null,
       currentMission: {},
       currentControl: {},
-      currentMaintenance: {
-        id: null,
-        type_principal: '',
-        categorie: '',
-        date_intervention: new Date().toISOString().split('T')[0],
-        cout: 0,
-        description: '',
-        garage_nom: '',
-        statut: 'Prévu',
-        fichier_facture: null
-      },
+      currentInterventions: {
+  id: null,
+  vehicule_id: null,
+  priorite: '',
+  type_demande: '',
+  date_prevue: '',
+  date_en_cours: '',
+  cout: '',
+  maintenance: {
+    type_principal: '',
+    categorie: '',
+    observation: ''
+  },
+  achat: {
+    fournisseur: '',
+    description: '',
+    delai: '',
+    piece: []
+  }
+},
       newVehiclePhoto: null,
       newFactureFile: null,
       
@@ -680,7 +740,7 @@ export default {
   },
   computed: {
     filteredCategories() {
-      return this.categories[this.currentMaintenance.type_principal] || [];
+      return this.categories[this.currentInterventions.type_principal] || [];
     }
   },
   methods: {
@@ -692,7 +752,7 @@ export default {
         this.documents = response.data.documents || [];
         this.missions = response.data.missions || [];
         this.checklist_controles = response.data.checklist_controles || [];
-        this.maintenance = response.data.maintenance || [];
+        this.interventions = response.data.interventions || [];
       } catch (error) {
         console.error('Erreur lors du chargement des détails:', error);
       }
@@ -718,7 +778,8 @@ export default {
       const statusMap = {
         DISPO: 'Disponible',
         EN_MISSION: 'En mission',
-        MAINTENANCE: 'Maintenance',
+        EN_PANNE : 'en panne',
+        MAINTENANCE: 'En Maintenance',
         HORS_SERVICE: 'Hors service'
       };
       return statusMap[status] || status;
@@ -726,9 +787,10 @@ export default {
     couleurEtat(etat) {
       const etatMap = {
         DISPO: 'success',
-        EN_MISSION: 'primary',
-        MAINTENANCE: 'warning',
-        HORS_SERVICE: 'danger'
+      EN_MISSION: 'primary',
+      EN_PANNE: 'secondary',
+      MAINTENANCE: 'warning',
+      HORS_SERVICE: 'danger'
       };
       return etatMap[etat] || 'secondary';
     },
@@ -765,25 +827,39 @@ export default {
         : { type_document: 'assurance', date_expiration: '', statut: 'valide', fichier: null };
       this.showDocumentModal = true;
     },
-    openMaintenanceModal(item) {
-      this.currentMaintenance = item
-        ? { ...item }
-        : {
-            type_principal: '',
-            categorie: '',
-            date_intervention: new Date().toISOString().split('T')[0],
-            cout: 0,
-            description: '',
-            garage_nom: '',
-            fichier_facture: null
-          };
-      this.newFactureFile = null;
-      this.showMaintenanceModal = true;
-    },
-    openMaintenanceDetailsModal(item) {
-      this.currentMaintenance = { ...item };
-      this.showMaintenanceModal = true;
-    },
+   openInterventionModal(item) {
+  this.currentIntervention = item
+    ? { ...item }
+    : {
+        type_demande: '',
+        priorite: '',
+        date_prevue: new Date().toISOString().split('T')[0],
+        date_en_cours: '',
+        cout: 0,
+        fichier_pdf: null,
+        maintenance: {
+          type_principal: '',
+          categorie: '',
+          observation: ''
+        },
+        achat: {
+          fournisseur: '',
+          description: '',
+          delai: '',
+          piece: []
+        }
+      };
+  this.newFactureFile = null;
+  this.showInterventionModal = true;
+},
+    openInterventionDetailsModal(item) {
+  this.currentIntervention = {
+    ...item,
+    maintenance: item.maintenance || { type_principal: '', categorie: '', observation: '' },
+    achat: item.achat || { fournisseur: '', description: '', delai: '', piece: [] }
+  };
+  this.showInterventionModal = true;
+},
     openMissionDetailsModal(mission) {
       this.selectedMission = {
         ...mission,
@@ -818,7 +894,7 @@ export default {
       this.showDocumentModal = false;
       this.showMissionModal = false;
       this.showControlModal = false;
-      this.showMaintenanceModal = false;
+      this.showInterventionModal = false;
       this.newVehiclePhoto = null;
       this.newDocumentFile = null;
       this.newFactureFile = null;
@@ -877,26 +953,56 @@ export default {
         console.error('Erreur lors de la sauvegarde du document:', error);
       }
     },
-    async saveMaintenance() {
-      try {
-        const formData = new FormData();
-        const fields = ['type_principal', 'categorie', 'date_intervention', 'statut', 'description', 'cout', 'garage_nom'];
-        fields.forEach(field => formData.append(field, this.currentMaintenance[field] || ''));
-        formData.append('id_vehicule', this.vehicule.id);
-        if (this.newFactureFile) {
-          formData.append('fichier_facture', this.newFactureFile);
-        }
-        if (this.currentMaintenance.id) {
-          await axios.put(`http://localhost:3000/api/maintenance/${this.currentMaintenance.id}`, formData);
-        } else {
-          await axios.post('http://localhost:3000/api/maintenance', formData);
-        }
-        this.closeModal();
-        this.fetchDetails();
-      } catch (error) {
-        console.error('Erreur maintenance:', error.response?.data || error.message);
-      }
+    async saveIntervention() {
+  try {
+    const formData = new FormData();
+
+    // Champs intervention
+    formData.append('type_demande', this.currentIntervention.type_demande || '');
+    formData.append('priorite', this.currentIntervention.priorite || '');
+    formData.append('date_prevue', this.currentIntervention.date_prevue || '');
+    formData.append('date_en_cours', this.currentIntervention.date_en_cours || '');
+    formData.append('cout', this.currentIntervention.cout || 0);
+    formData.append('fichier_pdf', this.newFactureFile || this.currentIntervention.fichier_pdf || '');
+    formData.append('id_vehicule', this.vehicule.id);
+
+    // Maintenance
+    formData.append('maintenance[type_principal]', this.currentIntervention.maintenance.type_principal || '');
+    formData.append('maintenance[categorie]', this.currentIntervention.maintenance.categorie || '');
+    formData.append('maintenance[observation]', this.currentIntervention.maintenance.observation || '');
+
+    // Achat
+    formData.append('achat[fournisseur]', this.currentIntervention.achat.fournisseur || '');
+    formData.append('achat[description]', this.currentIntervention.achat.description || '');
+    formData.append('achat[delai]', this.currentIntervention.achat.delai || '');
+
+    // Pièces
+    if (this.currentIntervention.achat.piece?.length) {
+      this.currentIntervention.achat.piece.forEach((p, index) => {
+        formData.append(`achat[piece][${index}][nom_piece]`, p.nom_piece || '');
+        formData.append(`achat[piece][${index}][quantite]`, p.quantite || 0);
+        formData.append(`achat[piece][${index}][prix_unitaire]`, p.prix_unitaire || 0);
+        formData.append(`achat[piece][${index}][observation]`, p.observation || '');
+      });
     }
+
+    // Envoi à l'API
+    if (this.currentIntervention.id) {
+      await axios.put(
+        `http://localhost:3000/api/interventions/${this.currentIntervention.id}`,
+        formData
+      );
+    } else {
+      await axios.post('http://localhost:3000/api/interventions', formData);
+    }
+
+    this.closeModal();
+    this.fetchDetails();
+  } catch (error) {
+    console.error('Erreur intervention:', error.response?.data || error.message);
+  }
+}
+
   },
   mounted() {
     this.fetchDetails();
@@ -975,36 +1081,37 @@ export default {
 .stats-grid {
   display: flex;
   justify-content: center;
-  gap: 2rem;
+  gap: 0.75rem;
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .stat-item {
   background: linear-gradient(to right, #f8fcff, #e7f3ff);
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.75rem;
+  padding: 0.5rem 1.30rem;        /* espace interne identique pour tous */
+  border-radius: 0.5rem;         /* coins arrondis identiques */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-  min-width: 90px;
+  min-width: 90px;                /* largeur minimale identique */
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;             /* centrage */
 }
 
 .stat-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .stat-value {
-  font-size: 1.75rem;
+  font-size: 0,85rem;
   font-weight: bold;
   color: #0d6efd;
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 0.85rem;
-  color: #6c757d;
-  margin-top: 0.5rem;
+  font-size: 0.65rem;
+  color: #4c5053;
+  margin-top: 0.3rem;
 }
 
 .empty-state {

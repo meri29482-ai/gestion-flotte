@@ -64,39 +64,41 @@ exports.create = async (req, res) => {
     });
 
     // ➤ Gestion des heures de travail + états chauffeur/vehicule
-    let heureActuelle = new Date();
+    const heureActuelle = new Date();
 
     if (type_controle === "AVANT_MISSION") {
-      // Création d’un enregistrement avec heure de départ
       await HeuresTravail.create({
         mission_id,
         chauffeur_id,
         heure_depart: heureActuelle
       });
 
-      // 🔄 Maj chauffeur et véhicule
       await chauffeur.update({ etat: "en mission" });
       await vehicule.update({ etat: "EN_MISSION" });
 
-      // 🔔 Notification démarrage
-      await Notifications.create({
+      // 🔔 Notification démarrage à tous les responsables parc et HSE
+      const responsables = await Utilisateur.findAll({
+        where: { role: ['RESPONSABLE_PARC', 'RESPONSABLE_HSE'] }
+      });
+
+      const notifications = responsables.map(resp => ({
         type: "INFO",
         titre: "🚗 Mission démarrée",
         message: `La mission ${missionOrdre} a démarré (chauffeur: ${chauffeurNom}).`,
         utilisateur_id: req.user?.id || null,
-        recepteur_id: 22, // Responsable
+        recepteur_id: resp.id,
         lu: 0,
         date_envoi: new Date()
-      });
+      }));
+
+      await Notifications.bulkCreate(notifications);
 
     } else if (type_controle === "APRES_MISSION") {
-      // Récupérer l’entrée heures_travail correspondante
       const heuresTravail = await HeuresTravail.findOne({ where: { mission_id, chauffeur_id } });
 
       if (heuresTravail) {
-        // Calcul de la durée
         const heureDepart = new Date(heuresTravail.heure_depart);
-        const dureeMs = Math.max(0, heureActuelle - heureDepart); // sécurité
+        const dureeMs = Math.max(0, heureActuelle - heureDepart);
         const heures = Math.floor(dureeMs / (1000 * 60 * 60));
         const minutes = Math.floor((dureeMs % (1000 * 60 * 60)) / (1000 * 60));
         const secondes = Math.floor((dureeMs % (1000 * 60)) / 1000);
@@ -111,33 +113,40 @@ exports.create = async (req, res) => {
         });
       }
 
-      // 🔄 Maj chauffeur et véhicule
       await chauffeur.update({ etat: "Dispo" });
       await vehicule.update({ etat: "DISPO" });
 
-      // 🔔 Notification fin
-      await Notifications.create({
+      // 🔔 Notification fin de mission à tous les responsables parc et HSE
+      const responsables = await Utilisateur.findAll({
+        where: { role: ['RESPONSABLE_PARC', 'RESPONSABLE_HSE'] }
+      });
+
+      const notificationsFin = responsables.map(resp => ({
         type: "INFO",
         titre: "✅ Mission terminée",
         message: `La mission ${missionOrdre} est terminée (chauffeur: ${chauffeurNom}).`,
         utilisateur_id: req.user?.id || null,
-        recepteur_id: 22,
+        recepteur_id: resp.id,
         lu: 0,
         date_envoi: new Date()
-      });
-    }
+      }));
 
-    // ➤ Si checklist invalide → notifier le responsable
-    if (!valide) {
-      await Notifications.create({
-        type: "ALERTE",
-        titre: "🚨 Anomalie détectée",
-        message: `⚠️ Une anomalie a été détectée lors du contrôle ${type_controle === 'AVANT_MISSION' ? 'avant mission' : 'après mission'} (mission ${missionOrdre}, chauffeur: ${chauffeurNom}).`,
-        utilisateur_id: req.user?.id || null,
-        recepteur_id: 22,
-        lu: 0,
-        date_envoi: new Date()
-      });
+      await Notifications.bulkCreate(notificationsFin);
+
+      // ➤ Notification en cas de checklist invalide
+      if (!valide) {
+        const notificationsAlertes = responsables.map(resp => ({
+          type: "ALERTE",
+          titre: "🚨 Anomalie détectée",
+          message: `⚠️ Une anomalie a été détectée lors du contrôle ${type_controle === 'AVANT_MISSION' ? 'avant mission' : 'après mission'} (mission ${missionOrdre}, chauffeur: ${chauffeurNom}).`,
+          utilisateur_id: req.user?.id || null,
+          recepteur_id: resp.id,
+          lu: 0,
+          date_envoi: new Date()
+        }));
+
+        await Notifications.bulkCreate(notificationsAlertes);
+      }
     }
 
     res.status(201).json({ message: "Checklist enregistrée avec succès", checklist });
@@ -146,6 +155,7 @@ exports.create = async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la création", error: err.message });
   }
 };
+
 
 
 

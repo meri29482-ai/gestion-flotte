@@ -2,26 +2,31 @@ const express = require("express");
 const path = require("path");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
+const cron = require("node-cron");
 
 // 📦 Création de l'application
 const app = express();
 
 // 🌍 Middlewares globaux
-  app.use(cors({
- origin: '*',
-  methods:  ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  credentials: true,
-}));
-  
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // 📁 Fichiers statiques
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/uploads/documents", express.static(path.join(__dirname, "uploads/documents")));
+app.use(
+  "/uploads/documents",
+  express.static(path.join(__dirname, "uploads/documents"))
+);
 
-// ✅ Importation des routes (assure-toi que tous ces fichiers existent)
+// ✅ Importation des routes
 const utilisateurRoutes = require("./routes/utilisateur.routes");
 const vehiculeRoutes = require("./routes/vehicules.routes");
 const chauffeurRoutes = require("./routes/chauffeur.routes");
@@ -32,10 +37,11 @@ const checklistRoutes = require("./routes/checklist.routes");
 const notificationRoutes = require("./routes/notifications.routes");
 const maintenanceRoutes = require("./routes/maintenance.routes");
 const congeRoutes = require("./routes/conge.routes");
-const signalementsRouter = require("./routes/signalement.routes")
-const heuresTravailRoutes = require('./routes/heuresTravail.routes');
+const signalementsRouter = require("./routes/signalement.routes");
+const heuresTravailRoutes = require("./routes/heuresTravail.routes");
 const interventionRouter = require("./routes/intervention.routes");
-const normesHseRoutes = require('./routes/normesHse.routes');
+const normesHseRoutes = require("./routes/normesHse.routes");
+
 
 // 🧭 Utilisation des routes
 app.use("/api/utilisateurs", utilisateurRoutes);
@@ -48,14 +54,26 @@ app.use("/api/checklists", checklistRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
 app.use("/api/conges", congeRoutes);
-app.use("/api/signalements",signalementsRouter);
-app.use('/api/heures-travail', heuresTravailRoutes);
-app.use('/api/interventions' , interventionRouter);
-app.use('/api/normes-hse', normesHseRoutes);
+app.use("/api/signalements", signalementsRouter);
+app.use("/api/heures-travail", heuresTravailRoutes);
+app.use("/api/interventions", interventionRouter);
+app.use("/api/normes-hse", normesHseRoutes);
+
+// ✅ Import de la tâche de vérification des expirations
+const documentController = require("./controllers/document.controller");
+
+// 🔍 Vérification immédiate au démarrage
+documentController.verifierExpirationsJob();
+
+// ⏰ Planification CRON
+cron.schedule("0 0 * * *", () => {
+  console.log("⏰ Vérification automatique des expirations...");
+  documentController.verifierExpirationsJob();
+});
 
 // 🏠 Route principale
 app.get("/", (req, res) => {
-  res.send("Bienvenue dans l'API de gestion de flotte.");
+  res.send("Bienvenue dans l'API de gestion de flotte 🚗📦");
 });
 
 // ✅ Export de l'application

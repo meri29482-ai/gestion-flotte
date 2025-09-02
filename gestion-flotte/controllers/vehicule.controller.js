@@ -6,7 +6,10 @@ const Chauffeur = db.chauffeurs;   // ✅ Ajouter ceci
 const Utilisateur = db.utilisateurs; // ✅ Ajouter ceci
 const Demande = db.demandes;  
 const ChecklistControle = db.checklists;
-
+const Intervention = db.Intervention;
+const Achat = db.Achat;
+const Maintenance = db.maintenance;
+const piece = db.Piece;
 const { Op } = require("sequelize");
 
 
@@ -89,7 +92,7 @@ exports.getVehiculeDetails = async (req, res) => {
     });
 
     // 3. Récupération des missions
-   const missions = await Mission.findAll({
+    const missions = await Mission.findAll({
       where: { vehicule_id: id },
       include: [
         {
@@ -106,7 +109,7 @@ exports.getVehiculeDetails = async (req, res) => {
         {
           model: Demande,
           as: "demande",
-          attributes: ["id","n_ordre", "destination" ,"itineraire", "date_heure_debut" , "date_heure_fin","observation"]
+          attributes: ["id","n_ordre", "destination", "itineraire", "date_heure_debut", "date_heure_fin","observation"]
         }
       ],
       order: [["id", "DESC"]]
@@ -118,13 +121,22 @@ exports.getVehiculeDetails = async (req, res) => {
       order: [["date_controle", "DESC"]],
     });
 
-  
+    // 5. Récupération des interventions liées au véhicule
+    const interventions = await Intervention.findAll({
+      where: { vehicule_id: id },
+      include: [
+        { model: Achat, as: "achat", include: [{ model: piece, as: "piece" }] },
+        { model: Maintenance, as: "maintenance" }
+      ],
+      order: [["id", "DESC"]]
+    });
 
     // 6. Envoi de la réponse
     return res.status(200).json({
       vehicule,
       documents,
       missions,
+      interventions,
       checklist_controles
     });
 
@@ -136,6 +148,7 @@ exports.getVehiculeDetails = async (req, res) => {
     });
   }
 };
+
 
 
 
@@ -266,5 +279,57 @@ exports.deleteVehicule = async (req, res) => {
   } catch (error) {
     console.error("Erreur suppression véhicule :", error);
     res.status(500).json({ message: "❌ Erreur serveur", error: error.message });
+  }
+};
+
+exports.getVehiculesDisponibles = async (req, res) => {
+  try {
+    console.log("📥 Requête reçue pour /vehicules/disponibles");
+
+    // Récupération des véhicules disponibles
+    const vehicules = await Vehicule.findAll({
+      where: { etat: "DISPO" },
+      order: [["id", "ASC"]] // Optionnel : trier par ID
+    });
+
+    console.log(`🚗 ${vehicules.length} véhicule(s) disponible(s) trouvé(s)`);
+    
+    if (!vehicules.length) {
+      return res.status(404).json({ message: "Aucun véhicule disponible" });
+    }
+
+    return res.status(200).json(vehicules);
+  } catch (error) {
+    console.error("❌ Erreur getVehiculesDisponibles :", error);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+};
+
+// ✅ Mettre à jour un véhicule (par ex: son état)
+exports.updateVehicule = async (req, res) => {
+  try {
+    const { id } = req.params; // id véhicule
+    const { etat, immatriculation, marque, modele, type, kilometrage, date_achat } = req.body;
+
+    const vehicule = await Vehicule.findByPk(id);
+    if (!vehicule) {
+      return res.status(404).json({ message: "Véhicule non trouvé" });      
+    }
+
+    // ✅ Mise à jour uniquement si la propriété est définie dans le body
+    if (etat !== undefined) vehicule.etat = etat;
+    if (immatriculation !== undefined) vehicule.immatriculation = immatriculation;
+    if (marque !== undefined) vehicule.marque = marque;
+    if (modele !== undefined) vehicule.modele = modele;
+    if (type !== undefined) vehicule.type = type;
+    if (kilometrage !== undefined) vehicule.kilometrage = kilometrage;
+    if (date_achat !== undefined) vehicule.date_achat = date_achat;
+
+    await vehicule.save();
+
+    res.json({ message: "✅ Véhicule mis à jour avec succès", vehicule });
+  } catch (error) {
+    console.error("Erreur update véhicule:", error);
+    res.status(500).json({ message: "❌ Erreur serveur lors de la mise à jour du véhicule" });
   }
 };

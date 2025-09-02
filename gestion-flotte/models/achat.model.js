@@ -41,10 +41,10 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     // Achat a plusieurs pièces (relation manquante ⚠️)
-   Achat.hasMany(models.Piece, {
-  foreignKey: "achat_id",
-  as: "piece"
-});
+    Achat.hasMany(models.Piece, {
+      foreignKey: "achat_id",
+      as: "piece"   // ⚡ alias important pour le include
+    });
   };
 
   return Achat;

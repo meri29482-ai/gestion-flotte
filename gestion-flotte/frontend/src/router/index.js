@@ -60,6 +60,7 @@ const routes = [
     children: [
       { path: '', redirect: 'dashboard' },
       { path: 'dashboard', name: 'AdminDashboard', component: () => import('@/views/admin/Dashboard.vue') },
+      { path: 'nouvelle-demande', name: 'ANouvelleDemande', component: () => import('@/views/admin/NouvelleDemande.vue') },
       { path: 'profil', name: 'AdminProfil', component: () => import('@/views/admin/profil.vue') },
       { path: 'utilisateurs', name: 'AdminUtilisateurs', component: () => import('@/views/admin/Utilisateurs.vue') },
       { path: 'notifications', name: 'Adminnotifications', component: () => import('@/views/admin/notifications.vue') },
@@ -75,6 +76,7 @@ const routes = [
     children: [
       { path: '', redirect: 'dashboard' },
       { path: 'dashboard', name: 'ChauffeurDashboard', component: () => import('@/views/chauffeur/Dashboard.vue') },
+      { path: 'nouvelle-demande', name: 'chNouvelleDemande', component: () => import('@/views/chauffeur/NouvelleDemande.vue') },
       { path: 'missions', name: 'ChauffeurMissions', component: () => import('@/views/chauffeur/MesMissions.vue') },
       { path: 'profil', name: 'ChauffeurProfil', component: () => import('@/views/chauffeur/Profil.vue') },
       { path: 'historique', name: 'ChauffeurHistorique', component: () => import('@/views/chauffeur/historique.vue') },
@@ -106,6 +108,7 @@ const routes = [
     children: [
       { path: '', redirect: 'dashboard' },
       { path: 'dashboard', name: 'HseDashboard', component: () => import('@/views/responsableHse/Dashboard.vue') },
+      { path: 'nouvelle-demande', name: 'HSENouvelleDemande', component: () => import('@/views/responsableHse/NouvelleDemande.vue') },
       { path: 'suivi-missions', name: 'Hsemission', component: () => import('@/views/responsableHse/suivi-missions.vue') },
       { path: 'incidents', name: 'Hseincidents', component: () => import('@/views/responsableHse/incidents.vue') },
       { path: 'rapport', name: 'RapportHse', component: () => import('@/views/responsableHse/RapportHse.vue') },
@@ -122,11 +125,19 @@ const routes = [
     component: ManagerLayout,
     meta: { role: 'MANAGER' },
     children: [
-      { path: '', redirect: 'dashboard' },
-      { path: 'dashboard', name: 'ManagerDashboard', component: () => import('@/views/manager/Dashboard.vue') },
-      { path: 'profil', name: 'ManagerProfil', component: () => import('@/views/manager/Profil.vue') },
-    ],
-  },
+    { path: '', redirect: 'dashboard' },
+    { path: 'dashboard', name: 'ChefDepartementDashboard', component: () => import('@/views/manager/Dashboard.vue')},
+    { path: 'nouvelle-demande', name: 'M-NouvelleDemande', component: () => import('@/views/manager/NouvelleDemande.vue') },
+    {path: 'signalements',name: 'ChefDepartementSignalement', component: () => import('@/views/manager/Signalements.vue')},
+    { path: 'profil', name: 'ChefDepartementProfil', component: () => import("@/views/manager/Profil.vue") },
+    {  path:'interventions', name: 'ChefDepartementDemandes', component: () => import("@/views/manager/Demandes.vue") },
+    { path: 'notifications', name: 'chefnotifications', component: () => import('@/views/manager/notifications.vue') },
+    { path: 'historique',  component: () => import("@/views/manager/Historique.vue") },
+    { path: '/signalements', name: 'ChefDepartementSignalements', component: () => import("@/views/manager/Signalements.vue") },
+  ],
+},
+    
+
 
   // 🚫 404
   {

@@ -2,7 +2,11 @@
   <div class="dashboard-demandeur">
     <div class="header-bar">
       <h1>📊 Tableau de bord - Admin</h1>
+      <button @click="goToNouvelleDemande" class="new-request-btn">
+        <i class="bi bi-plus-circle"></i> Demande Véhicule
+      </button>
     </div>
+
 
     <div class="summary">
       <div class="card"><h3>Total utilisateurs</h3><p>{{ total }}</p></div>
@@ -59,6 +63,11 @@ export default {
       chefsDepartement: 0,
     };
   },
+  methods: {
+  goToNouvelleDemande() {
+    this.$router.push("/admin/nouvelle-demande"); // ✅ c’est correct ici
+  }
+},
   async mounted() {
     const token = localStorage.getItem("token");
 
@@ -140,6 +149,32 @@ export default {
   font-size: 1rem;
   color: #888;
 }
+
+.new-request-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--sonatrach-orange);
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(243, 146, 0, 0.3);
+}
+
+.new-request-btn:hover {
+  background-color: #e08600;
+  transform: translateY(-2px);
+}
+
+.new-request-btn i {
+  font-size: 1.1rem;
+}
+
 .card p {
   font-size: 2rem;
   font-weight: bold;

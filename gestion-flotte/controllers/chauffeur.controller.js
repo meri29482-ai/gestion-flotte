@@ -170,6 +170,7 @@ exports.updateChauffeur = async (req, res) => {
         if (existingDoc) {
           await existingDoc.update({
             fichier_url,
+            date_creation: req.body[`${key}_creation`] || null,
             date_expiration: req.body[`${key}_expiration`] || null,
             statut: "valide"
           });
@@ -178,6 +179,7 @@ exports.updateChauffeur = async (req, res) => {
             chauffeur_id: chauffeur.id,
             type_document,
             fichier_url,
+            date_creation: req.body[`${key}_creation`] || null,
             date_expiration: req.body[`${key}_expiration`] || null,
             statut: "valide"
           });

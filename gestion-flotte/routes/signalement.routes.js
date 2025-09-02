@@ -11,6 +11,10 @@ router.post(
 );
 
 // GET tous les signalements
-router.get("/", signalementController.listeSignalements); // ✅ corriger ici
+router.get("/", signalementController.listeSignalements);
 
+router.put("/:id", signalementController.mettreAJourSignalement);
+
+// ✅ Récupérer un signalement par ID (avec mission + véhicule)
+router.get("/:id", signalementController.getSignalementById);
 module.exports = router;

@@ -7,13 +7,13 @@ module.exports = (sequelize, DataTypes) => {
     },
 
     immatriculation: {
-  type: DataTypes.STRING(20),
-  allowNull: false,
-  unique: {
-    name: 'uk_vehicules_immatriculation',
-    msg: 'Immatriculation déjà utilisée'
-  }
-},
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      unique: {
+        name: 'uk_vehicules_immatriculation',
+        msg: 'Immatriculation déjà utilisée'
+      }
+    },
 
     marque: {
       type: DataTypes.STRING(50),
@@ -39,9 +39,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.FLOAT,
       allowNull: true
     },
+
+    prochain_kilometrage: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+      defaultValue: 100 // première échéance de vidange
+    },
+
     photo_url: {
-  type: DataTypes.STRING,
-},
+      type: DataTypes.STRING,
+    },
 
     date_achat: {
       type: DataTypes.DATE,

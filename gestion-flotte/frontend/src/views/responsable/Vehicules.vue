@@ -708,6 +708,9 @@ export default {
 .status-en_mission {
   background-color: #ffc107; /* Jaune */
 }
+.status-en_panne {
+  background-color: #686868; /* Jaune */
+}
 .status-maintenance {
   background-color: #dc3545; /* Rouge */
 }
@@ -772,6 +775,7 @@ export default {
 .status-EN_MISSION { background: rgb(226, 186, 9); }
 .status-MAINTENANCE { background: rgb(50, 118, 219); }
 .status-HORS_SERVICE { background: rgb(209, 35, 35); }
+.status-EN_PANNE { background: rgb(255, 81, 0); }
 
 .vehicle-content {
   padding: 1.2rem;

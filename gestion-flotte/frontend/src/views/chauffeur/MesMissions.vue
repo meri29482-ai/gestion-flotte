@@ -809,6 +809,8 @@ export default {
       this.checklist[this.currentQuestionIndex].reponse = value;
       this.currentQuestionIndex++;
     },
+
+
     async validerChecklist() {
       if (!this.kilometrage) {
         this.showError = true;
@@ -904,6 +906,7 @@ export default {
         if (estValide && payload.mission_id) {
           const etat = this.typeControle === 'AVANT_MISSION' ? 'en cours' : 'terminer'
           const dateField = this.typeControle === 'AVANT_MISSION' ? 'date_depart' : 'date_retour';
+          
 
           await axios.put(`http://localhost:3000/api/missions/${payload.mission_id}`, {
             etat,
@@ -922,7 +925,44 @@ export default {
             confirmButtonColor: "#198754"
           });
         }
+// 🔹 Mise à jour du kilométrage du véhicule
+if (this.typeControle === 'APRES_MISSION' && vehiculeId) {
+  try {
+    await axios.put(`http://localhost:3000/api/vehicules/${vehiculeId}`, {
+      kilometrage: this.kilometrage
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
+    console.log(`Kilométrage du véhicule ${vehiculeId} mis à jour à ${this.kilometrage}`);
+  } catch (vehiculeError) {
+    console.error("Erreur lors de la mise à jour du véhicule :", vehiculeError);
+    Swal.fire({
+      title: "Erreur",
+      text: "Impossible de mettre à jour le kilométrage du véhicule",
+      icon: "error",
+      confirmButtonText: "OK",
+      confirmButtonColor: "#dc3545"
+    });
+  }
+}
+// 🔹 Mise à jour du kilométrage et de l'état de la mission après validation
+if (this.typeControle === 'APRES_MISSION' && vehiculeId) {
+  try {
+    await axios.put(`http://localhost:3000/api/vehicules/${vehiculeId}`, {
+      kilometrage: this.kilometrage
+    }, { headers: { Authorization: `Bearer ${token}` } });
+
+    await axios.put(`http://localhost:3000/api/missions/${payload.mission_id}`, {
+      etat: 'terminer',
+      date_retour: new Date()
+    }, { headers: { Authorization: `Bearer ${token}` } });
+
+    console.log(`Kilométrage du véhicule ${vehiculeId} mis à jour et mission ${payload.mission_id} terminée`);
+  } catch (vehiculeError) {
+    console.error("Erreur mise à jour véhicule/mission :", vehiculeError);
+  }
+}
         this.fermerChecklist();
         await this.fetchMissions();
 

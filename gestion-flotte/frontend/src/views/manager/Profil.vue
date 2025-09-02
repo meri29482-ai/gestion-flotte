@@ -12,10 +12,14 @@
         <div class="text-center text-md-start">
           <h2 class="fw-bold text-orange mb-1">{{ profil.nom }} {{ profil.prenom }}</h2>
           <p class="text-muted mb-1">
-            <i class="bi bi-person-badge-fill me-2 text-secondary"></i>Matricule : {{ profil.matricule }}
+            <i class="bi bi-person-badge-fill me-2 text-secondary"></i>
+            Matricule : {{ profil.matricule }}
           </p>
           <p>
-            <i class="bi bi-circle-fill me-1" :class="profil.etat === 'ACTIF' ? 'text-success' : 'text-secondary'"></i>
+            <i
+              class="bi bi-circle-fill me-1"
+              :class="profil.etat === 'ACTIF' ? 'text-success' : 'text-secondary'"
+            ></i>
             <span :class="['badge', profil.etat === 'ACTIF' ? 'bg-success' : 'bg-secondary']">
               {{ profil.etat === 'ACTIF' ? 'Actif' : 'Inactif' }}
             </span>
@@ -45,7 +49,7 @@
           <label>Email</label>
           <input v-model="profil.email" type="email" class="form-control" />
         </div>
-      
+
         <div class="col-md-6">
           <label>Fonction</label>
           <input v-model="profil.fonction" type="text" class="form-control" />
@@ -88,7 +92,7 @@
 import axios from "axios";
 
 export default {
-  name: "ProfilUtilisateur",
+  name: "ChefDepartementProfil",
   data() {
     return {
       profil: {
@@ -96,14 +100,13 @@ export default {
         prenom: "",
         telephone: "",
         email: "",
-    
         matricule: "",
         fonction: "",
         photo: null,
         role: "",
         etat: "",
       },
-      action: "lecture",
+      action: "lecture", // par défaut lecture
       enEdition: false,
       error: null,
     };
@@ -140,7 +143,6 @@ export default {
           prenom: utilisateur.prenom,
           telephone: utilisateur.numero_telephone || "Non renseigné",
           email: utilisateur.email || "Non renseigné",
-         
           fonction: utilisateur.fonction || "Non définie",
           matricule: utilisateur.matricule,
           photo: utilisateur.photo ? `/uploads/${utilisateur.photo}` : null,
@@ -157,7 +159,7 @@ export default {
 
     cancelEdit() {
       this.enEdition = false;
-      this.fetchProfil(); // recharge les données initiales
+      this.fetchProfil();
     },
 
     async saveProfil() {
@@ -174,7 +176,6 @@ export default {
         const payload = {
           numero_telephone: this.profil.telephone,
           email: this.profil.email,
-         
           fonction: this.profil.fonction,
         };
 
@@ -222,7 +223,7 @@ export default {
           this.error = "⚠️ Réponse inattendue du serveur.";
         }
       } catch (err) {
-        console.error("❌ Erreur lors de la création de notification :", err.response?.data || err.message);
+        console.error("❌ Erreur notification :", err.response?.data || err.message);
         this.error = err.response?.data?.message || "Erreur lors de la demande d'accès.";
       }
     },

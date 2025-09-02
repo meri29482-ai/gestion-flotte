@@ -722,33 +722,19 @@ resetCategorie() {
         alert("Erreur lors de la planification");
       });
   },
-
-
-    async submitFormAlt() {
+async submitFormAlt() {
   try {
-    
-     if (!this.form.vehicule_id) {
-          alert("Veuillez sélectionner un véhicule !");
-          return;
-        }
-
-    // 2️⃣ Vérifications simples
-    if (!this.form.priorite) {
-      alert("Le champ Priorité est obligatoire !");
-      return;
-    }
-    if (!this.form.type_demande) {
-      alert("Le champ Type de demande est obligatoire !");
+    if (!this.form.vehicule_id || !this.form.priorite || !this.form.type_demande) {
+      alert("Veuillez remplir tous les champs obligatoires !");
       return;
     }
 
-    // ✅ Préparer data
-        let data = {
-          vehicule_id: this.form.vehicule_id,
-          priorite: this.form.priorite,
-          type_demande: this.form.type_demande,
-          cout: this.form.cout,
-        };
+    let data = {
+      vehicule_id: this.form.vehicule_id,
+      priorite: this.form.priorite,
+      type_demande: this.form.type_demande,
+      cout: this.form.cout,
+    };
 
     if (this.form.type_demande === 'achat') {
       data.delai = this.form.delai;
@@ -762,10 +748,21 @@ resetCategorie() {
       data.observation = this.form.observation;
     }
 
-    // 4️⃣ Envoi de l'intervention
-    await axios.post('http://localhost:3000/api/interventions', data);
+    // 🔹 Récupérer le token JWT stocké après login
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Vous devez être connecté !");
+      return;
+    }
 
-    alert("Intervention enregistrée avec succès !");
+    // 🔹 Envoi au backend avec token
+    const response = await axios.post(
+      'http://localhost:3000/api/interventions',
+      data,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    alert(response.data.message);
     this.resetForm();
 
   } catch (error) {
@@ -774,7 +771,6 @@ resetCategorie() {
   }
 }
 ,
-  
     
    ouvrirFormulaireMaintenance() {
  

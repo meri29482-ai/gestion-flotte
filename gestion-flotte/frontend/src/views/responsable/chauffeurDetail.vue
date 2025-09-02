@@ -212,8 +212,8 @@
                   <thead>
                     <tr>
                       <th>Type</th>
-                      <th>        </th>
-                      <th>Expiration</th>
+                      <th>Date Création</th>
+                      <th>Date Expiration</th>
                       <th>Statut</th>
                       <th class="text-end">Actions</th>
                     </tr>
@@ -221,7 +221,7 @@
                   <tbody>
                     <tr v-for="doc in chauffeur.documents" :key="doc.id">
                       <td>{{ getDocumentLabel(doc.type_document) }}</td>
-                      <td>{{ doc.numero || '-' }}</td>
+                      <td>{{ formatDate(doc.date_creation) }}</td>
                       <td :class="{ 'text-danger': isExpired(doc.date_expiration) }">
                         {{ formatDate(doc.date_expiration) }}
                       </td>
@@ -557,11 +557,19 @@
                   <option value="autre">Autre</option>
                 </select>
               </div>
-              
               <div class="mb-3">
-                <label class="form-label">Date d'expiration</label>
-                <input type="date" class="form-control" v-model="newDocument.date_expiration" required>
+                <label class="form-label">Date de création</label>
+                <input type="date" class="form-control" v-model="newDocument.date_creation" required>
               </div>
+              <div class="mb-3">
+  <label class="form-label">Date d'expiration</label>
+  <input 
+    type="date" 
+    class="form-control" 
+    v-model="newDocument.date_expiration"
+    :required="['permis', 'controle_technique', 'certificat_capacite', 'certificat_medical', 'assurance'].includes(newDocument.type_document)"
+  >
+</div>
               <div class="mb-3">
                 <label class="form-label">Fichier</label>
                 <input type="file" class="form-control" @change="handleFileUpload" required>
@@ -647,14 +655,14 @@ export default {
       documents: [],
       missions: [],
       conges: [],
-      heuresTravail: [], // ⚠️ initialisé à un tableau vide
+      heuresTravail: [],
       selectedMission: {},
       loading: true,
       error: false,
       editMode: false,
-       showMissionModal: false,
-    showDocumentModal: false,
-    showCongeModal: false,
+      showMissionModal: false,
+      showDocumentModal: false,
+      showCongeModal: false,
       newConge: {
         type: 'Annuel',
         date_debut: '',
@@ -685,8 +693,8 @@ export default {
         await this.fetchMissions();
         await this.getCongesByChauffeur();
         await this.fetchHeuresTravail();
-      } catch (error) {
-        console.error('Erreur lors du chargement du chauffeur:', error);
+      } catch (err) {
+        console.error('Erreur lors du chargement du chauffeur:', err);
         this.error = true;
       } finally {
         this.loading = false;
@@ -697,87 +705,71 @@ export default {
       try {
         const { data } = await axios.get(`http://localhost:3000/api/missions/chauffeur/${this.chauffeurId}`);
         this.missions = data;
-      } catch (error) {
-        console.error('Erreur lors du chargement des missions:', error);
+      } catch (err) {
+        console.error('Erreur lors du chargement des missions:', err);
         this.missions = [];
       }
     },
 
     async fetchHeuresTravail() {
-  try {
-    this.loading = true;
-    this.error = null;
-
-    const token = localStorage.getItem("token");
-    const response = await axios.get(
-      `http://localhost:3000/api/heures-travail/chauffeur/${this.chauffeurId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    this.heuresTravail = Array.isArray(response.data) ? response.data : [];
-  } catch (err) {
-    console.error("Erreur fetchHeuresTravail :", err);
-    this.error = "Erreur lors de la récupération des heures de travail.";
-    this.heuresTravail = [];
-  } finally {
-    this.loading = false;
-  }
-},
-    formatDateHeure(date) {
-  if (!date) return '-';
-  const options = {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  };
-  return new Date(date).toLocaleString('fr-FR', options);
-},
-
-getDureeBadgeClass(duree) {
-    if (!duree) return 'badge bg-secondary';
-
-    const [hh, mm] = duree.split(':').map(Number);
-    const totalHours = hh + mm / 60;
-
-    if (totalHours >= 100) return 'badge bg-danger';     // très longue
-    if (totalHours >= 50) return 'badge bg-warning';     // longue
-    return 'badge bg-success';                           // courte
-  },
-
-   totalHeuresTravail() {
-    if (!this.heuresTravail || this.heuresTravail.length === 0) return '0h 0m';
-
-    // Récupère le mois actuel (0 = janvier, 11 = décembre)
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    let totalSeconds = 0;
-
-    this.heuresTravail.forEach(h => {
-      const dateMission = new Date(h.heure_depart);
-      if (dateMission.getMonth() === currentMonth && dateMission.getFullYear() === currentYear) {
-        // Si duree_total est défini et au format hh:mm:ss
-        if (h.duree_total) {
-          const [hh, mm, ss] = h.duree_total.split(':').map(Number);
-          totalSeconds += hh * 3600 + mm * 60 + (ss || 0);
-        }
+      try {
+        this.loading = true;
+        this.error = null;
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:3000/api/heures-travail/chauffeur/${this.chauffeurId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        this.heuresTravail = Array.isArray(response.data) ? response.data : [];
+      } catch (err) {
+        console.error("Erreur fetchHeuresTravail :", err);
+        this.error = "Erreur lors de la récupération des heures de travail.";
+        this.heuresTravail = [];
+      } finally {
+        this.loading = false;
       }
-    });
+    },
 
-    const totalHours = Math.floor(totalSeconds / 3600);
-    const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+    formatDateHeure(date) {
+      if (!date) return '-';
+      const options = { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' };
+      return new Date(date).toLocaleString('fr-FR', options);
+    },
 
-    return `${totalHours}h ${totalMinutes}m`;
-  },
+    getDureeBadgeClass(duree) {
+      if (!duree) return 'badge bg-secondary';
+      const [hh, mm] = duree.split(':').map(Number);
+      const totalHours = hh + mm / 60;
+      if (totalHours >= 100) return 'badge bg-danger';
+      if (totalHours >= 50) return 'badge bg-warning';
+      return 'badge bg-success';
+    },
+
+    totalHeuresTravail() {
+      if (!this.heuresTravail || this.heuresTravail.length === 0) return '0h 0m';
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      let totalSeconds = 0;
+      this.heuresTravail.forEach(h => {
+        const dateMission = new Date(h.heure_depart);
+        if (dateMission.getMonth() === currentMonth && dateMission.getFullYear() === currentYear) {
+          if (h.duree_total) {
+            const [hh, mm, ss] = h.duree_total.split(':').map(Number);
+            totalSeconds += hh * 3600 + mm * 60 + (ss || 0);
+          }
+        }
+      });
+      const totalHours = Math.floor(totalSeconds / 3600);
+      const totalMinutes = Math.floor((totalSeconds % 3600) / 60);
+      return `${totalHours}h ${totalMinutes}m`;
+    },
 
     async getCongesByChauffeur() {
       try {
         const response = await axios.get(`http://localhost:3000/api/conges/chauffeur/${this.chauffeurId}`);
         this.conges = response.data;
-      } catch (error) {
-        console.error('Erreur lors du chargement des congés:', error);
+      } catch (err) {
+        console.error('Erreur lors du chargement des congés:', err);
       }
     },
 
@@ -790,36 +782,43 @@ getDureeBadgeClass(duree) {
           date_fin: this.newConge.date_fin,
           remarque: this.newConge.remarque
         });
-
-        this.$toast.success('Congé ajouté avec succès');
+        this.$toast?.success('Congé ajouté avec succès');
         this.showCongeModal = false;
         this.resetNewConge();
         await this.getCongesByChauffeur();
-      } catch (error) {
-        console.error('Erreur lors de l\'ajout du congé:', error);
-        this.$toast.error('Erreur lors de l\'ajout du congé');
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout du congé:', err);
+        this.$toast?.error('Erreur lors de l\'ajout du congé');
       }
     },
 
     async deleteConge(id) {
       if (!confirm('Voulez-vous vraiment supprimer ce congé ?')) return;
-      
       try {
         await axios.delete(`http://localhost:3000/api/conges/${id}`);
-        this.$toast.success('Congé supprimé avec succès');
+        this.$toast?.success('Congé supprimé avec succès');
         await this.getCongesByChauffeur();
-      } catch (error) {
-        console.error('Erreur lors de la suppression du congé:', error);
-        this.$toast.error('Erreur lors de la suppression du congé');
+      } catch (err) {
+        console.error('Erreur lors de la suppression du congé:', err);
+        this.$toast?.error('Erreur lors de la suppression du congé');
       }
     },
 
+    // === AJOUT DE DOCUMENT ===
     async addDocument() {
       try {
+        // Vérifie si date_expiration est obligatoire
+        const requiredDates = ['permis_conduire', 'controle_technique', 'certificat_capacite', 'certificat_medical', 'assurance'];
+        if (requiredDates.includes(this.newDocument.type_document) && !this.newDocument.date_expiration) {
+          return this.$toast?.error('La date d\'expiration est obligatoire pour ce type de document');
+        }
+
         const formData = new FormData();
         formData.append('type_document', this.newDocument.type_document);
-        formData.append('numero', this.newDocument.numero);
-        formData.append('date_expiration', this.newDocument.date_expiration);
+        formData.append('numero', this.newDocument.numero || '');
+        if (this.newDocument.date_expiration) {
+          formData.append('date_expiration', this.newDocument.date_expiration);
+        }
         if (this.newDocument.fichier) {
           formData.append('fichier', this.newDocument.fichier);
         }
@@ -827,73 +826,54 @@ getDureeBadgeClass(duree) {
         const { data } = await axios.post(
           `http://localhost:3000/api/chauffeurs/${this.chauffeurId}/documents`,
           formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          }
+          { headers: { 'Content-Type': 'multipart/form-data' } }
         );
 
-        if (!this.chauffeur.documents) {
-          this.chauffeur.documents = [];
-        }
+        if (!this.chauffeur.documents) this.chauffeur.documents = [];
         this.chauffeur.documents.push(data);
         this.showDocumentModal = false;
         this.resetNewDocument();
-        this.$toast.success('Document ajouté avec succès');
-      } catch (error) {
-        console.error('Erreur lors de l\'ajout du document:', error);
-        this.$toast.error('Erreur lors de l\'ajout du document');
+        this.$toast?.success('Document ajouté avec succès');
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout du document:', err);
+        this.$toast?.error('Erreur lors de l\'ajout du document');
       }
     },
 
     async deleteDocument(documentId) {
       if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return;
-
       try {
         await axios.delete(`http://localhost:3000/api/documents/${documentId}`);
         this.chauffeur.documents = this.chauffeur.documents.filter(d => d.id !== documentId);
-        this.$toast.success('Document supprimé avec succès');
-      } catch (error) {
-        console.error('Erreur lors de la suppression du document:', error);
-        this.$toast.error('Erreur lors de la suppression du document');
+        this.$toast?.success('Document supprimé avec succès');
+      } catch (err) {
+        console.error('Erreur lors de la suppression du document:', err);
+        this.$toast?.error('Erreur lors de la suppression du document');
       }
     },
 
     async saveChanges() {
-  try {
-    const token = localStorage.getItem("token");
-    await axios.put(
-      `http://localhost:3000/api/chauffeurs/${this.chauffeur.id}`,
-      this.chauffeur,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      try {
+        const token = localStorage.getItem("token");
+        await axios.put(
+          `http://localhost:3000/api/chauffeurs/${this.chauffeur.id}`,
+          this.chauffeur,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        alert("Chauffeur modifié avec succès !");
+        this.editMode = false;
+      } catch (err) {
+        console.error("Erreur lors de la mise à jour :", err);
+        const message = err.response?.data?.error || err.response?.data?.message || err.message || "Erreur inconnue";
+        alert("Échec de la modification : " + message);
       }
-    );
-
-    alert("Chauffeur modifié avec succès !");
-    this.editMode = false;
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour :", error);
-
-    // Vérifie que la structure existe avant d’y accéder
-    const message =
-      error.response?.data?.error ||
-      error.response?.data?.message ||
-      error.message ||
-      "Erreur inconnue";
-
-    alert("Échec de la modification : " + message);
-  }
-},
+    },
 
     showMissionDetails(mission) {
       this.selectedMission = mission;
       this.showMissionModal = true;
     },
-    
+
     closeMissionModal() {
       this.showMissionModal = false;
     },
@@ -901,13 +881,13 @@ getDureeBadgeClass(duree) {
     async terminerMission(missionId) {
       try {
         await axios.put(`http://localhost:3000/api/missions/${missionId}/terminer`);
-        this.$toast.success('Mission terminée avec succès');
+        this.$toast?.success('Mission terminée avec succès');
         this.closeMissionModal();
         await this.fetchMissions();
         await this.fetchChauffeur();
-      } catch (error) {
-        console.error('Erreur lors de la terminaison de la mission:', error);
-        this.$toast.error('Erreur lors de la terminaison de la mission');
+      } catch (err) {
+        console.error('Erreur lors de la terminaison de la mission:', err);
+        this.$toast?.error('Erreur lors de la terminaison de la mission');
       }
     },
 
@@ -917,32 +897,16 @@ getDureeBadgeClass(duree) {
 
     formatDateTime(date) {
       if (!date) return '-';
-      const options = {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      };
-      return new Date(date).toLocaleString('fr-FR', options);
+      return new Date(date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     },
 
     couleurEtat(etat) {
-      const map = {
-        'Dispo': 'success',
-        'en mission': 'warning',
-        'hors service': 'danger'
-      };
+      const map = { 'Dispo': 'success', 'en mission': 'warning', 'hors service': 'danger' };
       return map[etat] || 'secondary';
     },
 
     getStatusClass(etat) {
-      const map = {
-        'en attente': 'bg-info',
-        'en cours': 'bg-primary',
-        'terminer': 'bg-success',
-        'annuler': 'bg-danger'
-      };
+      const map = { 'en attente': 'bg-info', 'en cours': 'bg-primary', 'terminer': 'bg-success', 'annuler': 'bg-danger' };
       return map[etat] || 'bg-secondary';
     },
 
@@ -977,27 +941,19 @@ getDureeBadgeClass(duree) {
     },
 
     resetNewDocument() {
-      this.newDocument = {
-        type_document: 'permis_conduire',
-        numero: '',
-        date_expiration: '',
-        fichier: null
-      };
+      this.newDocument = { type_document: 'permis_conduire', numero: '', date_expiration: '', fichier: null };
     },
 
     resetNewConge() {
-      this.newConge = {
-        type: 'Annuel',
-        date_debut: '',
-        date_fin: '',
-        remarque: ''
-      };
+      this.newConge = { type: 'Annuel', date_debut: '', date_fin: '', remarque: '' };
     }
   },
+
   mounted() {
     this.fetchChauffeur();
   }
 };
+
 </script>
 
 

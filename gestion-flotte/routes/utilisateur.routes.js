@@ -19,4 +19,14 @@ router.put("/:id", utilisateurController.update);
 
 router.patch("/:id/action", utilisateurController.updateAction);
 
+// 📩 Envoyer un code
+router.post("/envoyer-code", utilisateurController.envoyerCode);
+
+// ✅ Vérifier le code
+router.post("/verifier-code", utilisateurController.verifierCode);
+router.get("/role/:role", utilisateurController.findByRole);
+
+// 🔁 Modifier le mot de passe
+router.post("/modifier-mot-de-passe", utilisateurController.modifierMotDePasse);
+
 module.exports = router;

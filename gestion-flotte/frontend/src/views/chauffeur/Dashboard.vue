@@ -6,6 +6,9 @@
         <i class="bi bi-speedometer2"></i>
         <h1>Tableau de bord Chauffeur</h1>
       </div>
+      <button @click="goToNouvelleDemande" class="new-request-btn">
+        <i class="bi bi-plus-circle"></i> Demande Véhicule
+      </button>
       <button @click="fetchMissions" class="btn-refresh">
         <i class="bi bi-arrow-clockwise"></i> Actualiser
       </button>
@@ -347,6 +350,8 @@ export default {
         .sort((a, b) => new Date(b.demande.date_heure_debut) - new Date(a.demande.date_heure_debut))
         .slice(0, 5);
     },
+    
+
     prochaineMission() {
       return this.missionsEnAttente.length > 0 ? this.missionsEnAttente[0] : null;
     },
@@ -416,6 +421,9 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    goToNouvelleDemande() {
+      this.$router.push("/chauffeur/nouvelle-demande");
     },
     initMap() {
       if (this.mapInitialized || this.missions.length === 0) return;
@@ -685,6 +693,31 @@ export default {
   font-weight: 600;
   margin: 0;
   color: #333;
+}
+
+.new-request-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--sonatrach-orange);
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(243, 146, 0, 0.3);
+}
+
+.new-request-btn:hover {
+  background-color: #e08600;
+  transform: translateY(-2px);
+}
+
+.new-request-btn i {
+  font-size: 1.1rem;
 }
 
 .btn-refresh {

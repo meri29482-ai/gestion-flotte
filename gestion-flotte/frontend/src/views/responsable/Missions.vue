@@ -67,77 +67,85 @@
             </thead>
             <tbody>
               <template v-for="(missionsGroupees, nOrdre) in missionsGroupedByOrder" :key="nOrdre">
-                <tr 
-                  v-for="(mission, index) in missionsGroupees" 
-                  :key="mission.id"
-                  class="hover-shadow"
-                  :class="{'border-bottom-0': index < missionsGroupees.length - 1}"
-                >
-                  <!-- Numéro d'ordre (affiché uniquement pour la première mission du groupe) -->
-                  <td v-if="index === 0" :rowspan="missionsGroupees.length">
-                    <span class="text-truncate d-inline-block" style="max-width: 150px;">
-                      {{ nOrdre || '—' }}
-                    </span>
-                  </td>
-                  
-                  <td v-else class="d-none"></td> <!-- Cellule cachée pour maintenir la structure -->
-                  <td>
-                    <span class="badge bg-light text-dark text-uppercase d-flex align-items-center gap-1">
-                      <i :class="getTypeMissionIcon(mission.type_mission)"></i>
-                      {{ getTypeMissionText(mission.type_mission) }}
-                    </span>
-                  </td>
-                  <td class="ps-4">
-                    <div v-if="mission.vehicule" class="d-flex align-items-center gap-2">
-                      <i class="bi bi-car-front-fill text-primary"></i>
-                      <span class="fw-medium">{{ mission.vehicule.immatriculation }}</span>
-                    </div>
-                    <span v-else class="text-muted">—</span>
-                  </td>
-                  <td>
-                    <div v-if="mission.chauffeur?.utilisateur" class="d-flex align-items-center gap-2">
-                      <i class="bi bi-person-circle text-secondary"></i>
-                      <span>{{ mission.chauffeur.utilisateur.nom }} {{ mission.chauffeur.utilisateur.prenom }}</span>
-                    </div>
-                    <span v-else class="text-muted">—</span>
-                  </td>
-                  
-                  <td>{{ formatDate(mission.date_depart) }}</td>
-                  <td>{{ formatDate(mission.date_routour) }}</td>
-                  <td>
-                    <span class="text-truncate d-inline-block" style="max-width: 150px;">
-                      {{ mission.demande?.destination || '—' }}
-                    </span>
-                  </td>
-                  <td>
-                    <span class="badge text-uppercase px-2 py-1 rounded-pill" :class="getClasseEtat(mission.etat)">
-                      {{ getEtatText(mission.etat) }}
-                    </span>
-                  </td>
-                  <td class="text-end pe-4">
-                    <div class="d-flex justify-content-end gap-2">
-                      <button 
-                        class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" 
-                        style="width: 32px; height: 32px;"
-                        @click="ouvrirModifier(mission)"
-                        title="Modifier"
-                      >
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button 
-                        class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" 
-                        style="width: 32px; height: 32px;"
-                        @click="ouvrirDetails(mission)"
-                        title="Détails"
-                      >
-                        <i class="bi bi-eye"></i>
-                      </button>
-                      
-                      
-                    </div>
-                  </td>
-                </tr>
-              </template>
+ <tr 
+  v-for="(mission, index) in missionsGroupees" 
+  :key="mission.id"
+  class="hover-shadow"
+  :class="[
+    {'border-bottom-0': index < missionsGroupees.length - 1},
+    mission.probleme === 'oui' ? 'ligne-probleme' : ''
+  ]"
+>
+    <!-- Numéro d'ordre (affiché uniquement pour la première mission du groupe) -->
+    <td v-if="index === 0" :rowspan="missionsGroupees.length">
+      <span class="text-truncate d-inline-block" style="max-width: 150px;">
+        {{ nOrdre || '—' }}
+      </span>
+    </td>
+
+    <td v-else class="d-none"></td> <!-- Cellule cachée pour maintenir la structure -->
+
+    <td>
+      <span class="badge bg-light text-dark text-uppercase d-flex align-items-center gap-1">
+        <i :class="getTypeMissionIcon(mission.type_mission)"></i>
+        {{ getTypeMissionText(mission.type_mission) }}
+      </span>
+    </td>
+
+    <td class="ps-4">
+      <div v-if="mission.vehicule" class="d-flex align-items-center gap-2">
+        <i class="bi bi-car-front-fill text-primary"></i>
+        <span class="fw-medium">{{ mission.vehicule.immatriculation }}</span>
+      </div>
+      <span v-else class="text-muted">—</span>
+    </td>
+
+    <td>
+      <div v-if="mission.chauffeur?.utilisateur" class="d-flex align-items-center gap-2">
+        <i class="bi bi-person-circle text-secondary"></i>
+        <span>{{ mission.chauffeur.utilisateur.nom }} {{ mission.chauffeur.utilisateur.prenom }}</span>
+      </div>
+      <span v-else class="text-muted">—</span>
+    </td>
+
+    <td>{{ formatDate(mission.date_depart) }}</td>
+    <td>{{ formatDate(mission.date_routour) }}</td>
+
+    <td>
+      <span class="text-truncate d-inline-block" style="max-width: 150px;">
+        {{ mission.demande?.destination || '—' }}
+      </span>
+    </td>
+
+    <td>
+      <span class="badge text-uppercase px-2 py-1 rounded-pill" :class="getClasseEtat(mission.etat)">
+        {{ getEtatText(mission.etat) }}
+      </span>
+    </td>
+
+    <td class="text-end pe-4">
+      <div class="d-flex justify-content-end gap-2">
+        <button 
+          class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" 
+          style="width: 32px; height: 32px;"
+          @click="ouvrirModifier(mission)"
+          title="Modifier"
+        >
+          <i class="bi bi-pencil"></i>
+        </button>
+
+        <button 
+          class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" 
+          style="width: 32px; height: 32px;"
+          @click="ouvrirDetails(mission)"
+          title="Détails"
+        >
+          <i class="bi bi-eye"></i>
+        </button>
+      </div>
+    </td>
+  </tr>
+</template>
               <tr v-if="missionsFiltrees.length === 0">
                 <td colspan="9" class="text-center text-muted py-4">
                   <i class="bi bi-inbox fs-4 d-block mb-2"></i>
@@ -1204,6 +1212,15 @@ export default {
   background-color: #ffc107;
 }
 
+.ligne-probleme {
+  background-color: #f8d7da !important; /* rouge clair */
+}
+
+.ligne-probleme td {
+  background-color: #f8d7da !important; /* fond appliqué aussi aux cellules */
+  color: #000 !important;               /* texte bien lisible */
+  border-color: #f5c2c7 !important;     /* bordures assorties */
+}
 .bg-primary {
   background-color: #0d6efd;
 }
@@ -1337,6 +1354,7 @@ export default {
 .modal-content::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
 
 /* Style pour la carte */
 #map-container {

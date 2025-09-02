@@ -27,24 +27,36 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW,
     },
     intervention_demandee: {
-      type: DataTypes.ENUM('oui', 'non'),
+      type: DataTypes.ENUM("oui", "non"),
       allowNull: false,
-      defaultValue: 'non',
+      defaultValue: "non",
     },
     intervention_description: {
       type: DataTypes.TEXT,
       allowNull: true,
     },
     mission_continue: {
-      type: DataTypes.ENUM('oui', 'non'),
+      type: DataTypes.ENUM("oui", "non"),
       allowNull: false,
+      defaultValue: "non",
     },
     photo: {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    vehicule_remplacement_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    // ✅ Nouveau champ pour indiquer si une solution est enregistrée
+    solution_enregistree: {
+      type: DataTypes.BOOLEAN, // Sequelize gère BOOLEAN → TINYINT(1)
+      allowNull: false,
+      defaultValue: false,
+    },
   }, {
     timestamps: true,
+    tableName: 'signalements',
   });
 
   // Associations
@@ -61,6 +73,13 @@ module.exports = (sequelize, DataTypes) => {
       as: "chauffeur",
       onUpdate: "CASCADE",
       onDelete: "CASCADE",
+    });
+
+    Signalement.belongsTo(models.vehicules, {
+      foreignKey: "vehicule_remplacement_id",
+      as: "vehicule_remplacement",
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     });
   };
 

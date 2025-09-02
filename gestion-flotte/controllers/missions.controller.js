@@ -425,7 +425,7 @@ exports.signalerIncident = async (req, res) => {
       include: [
         {
           model: db.demandes,
-          as: "demande", // ⚠️ alias selon ton association
+          as: "demande",
           attributes: ["n_ordre"]
         }
       ]
@@ -477,15 +477,24 @@ exports.signalerIncident = async (req, res) => {
     }
     await db.missions.update(updateData, { where: { id: mission_id } });
 
-    // 🔔 Créer une notification complète
-    await Notification.create({
+    // 🔔 Récupérer tous les responsables parc et HSE
+    const responsables = await db.utilisateurs.findAll({
+      where: { role: ['RESPONSABLE_PARC', 'RESPONSABLE_HSE'] }
+    });
+
+    // 🔔 Créer les notifications pour chaque responsable
+    const notifications = responsables.map(resp => ({
       titre: "🚨 Incident signalé",
       message: `Un incident de type "${type}" a été signalé par ${chauffeurNom} sur la mission #${numeroOrdre}.`,
-      type: "alerte",
+      type: "ALERTE",
       mission_id: mission_id,
       utilisateur_id: req.user?.id || null,
-      recepteur_id: 22
-    });
+      recepteur_id: resp.id,
+      lu: 0,
+      date_envoi: new Date()
+    }));
+
+    await db.notifications.bulkCreate(notifications);
 
     res.status(201).json({
       message: "Signalement enregistré" + (mission_continue === "non" ? " et mission bloquée" : ""),

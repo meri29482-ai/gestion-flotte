@@ -208,3 +208,91 @@ exports.updateAction = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur." });
   }
 };
+
+
+// 📩 Envoyer un code de vérification
+exports.envoyerCode = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const utilisateur = await Utilisateur.findOne({ where: { email } });
+    if (!utilisateur) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000);
+    codesParEmail[email] = code;
+
+    await envoyerCodeParEmail(email, code); // ✅ nom correct
+    res.json({ message: "📩 Code envoyé à votre adresse e-mail." });
+  } catch (error) {
+    console.error("Erreur envoyerCode:", error);
+    res.status(500).json({ message: "Erreur lors de l'envoi du code." });
+  }
+};
+
+// ✅ Vérifier le code
+exports.verifierCode = (req, res) => {
+  const { email, code } = req.body;
+  const codeAttendu = codesParEmail[email];
+
+  if (parseInt(code) === codeAttendu) {
+    res.json({ message: "✅ Code vérifié avec succès." });
+  } else {
+    res.status(400).json({ message: "❌ Code incorrect ou expiré." });
+  }
+};
+
+// 🔁 Modifier le mot de passe
+exports.modifierMotDePasse = async (req, res) => {
+  const { email, nouveauMotDePasse } = req.body;
+
+  try {
+    const utilisateur = await Utilisateur.findOne({ where: { email } });
+    if (!utilisateur) {
+      return res.status(404).json({ message: "Utilisateur non trouvé." });
+    }
+
+    const motDePasseCrypte = await bcrypt.hash(nouveauMotDePasse, 10);
+    utilisateur.mot_de_passe = motDePasseCrypte;
+    await utilisateur.save();
+
+    delete codesParEmail[email];
+
+    res.json({ message: "🔐 Mot de passe modifié avec succès." });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur lors de la mise à jour du mot de passe." });
+  }
+};
+// 📖 Récupérer les utilisateurs par rôle
+exports.findByRole = async (req, res) => {
+  const { role } = req.params;
+
+  try {
+    const utilisateurs = await Utilisateur.findAll({ where: { role } });
+    const utilisateursSansMdp = utilisateurs.map(u => {
+      const user = u.toJSON();
+      delete user.mot_de_passe;
+      if (user.photo) user.photoUrl = `http://localhost:3000/uploads/${user.photo}`;
+      return user;
+    });
+
+    res.status(200).send(utilisateursSansMdp);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+// 🔹 Récupérer le chef de département
+exports.getChefDepartement = async (req, res) => {
+  try {
+    const chef = await Utilisateur.findOne({
+      where: { role: 'MANAGER', etat: 'ACTIF' }
+    });
+    if (!chef) return res.status(404).json({ message: "Chef de département introuvable" });
+    res.json(chef);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

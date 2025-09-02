@@ -1,8 +1,13 @@
 <template>
   <div class="dashboard-modern container-fluid py-4">
+    <div class="header-bar">
     <h2 class="mb-4 dashboard-title">
       <i class="bi bi-speedometer2 me-2"></i>Statistiques Parc & HSE
     </h2>
+    <button @click="goToNouvelleDemande" class="new-request-btn">
+        <i class="bi bi-plus-circle"></i> Demande Véhicule
+      </button>
+    </div>
 
     <!-- KPI Cards -->
     <div class="row g-4 mb-4">
@@ -183,6 +188,9 @@ export default {
         this.isLoading = false;
       }
     },
+    goToNouvelleDemande() {
+    this.$router.push("/responsableHSE/nouvelle-demande"); // ✅ c’est correct ici
+  },
     renderIncidentsChart() {
   if (this.incidentsChart) this.incidentsChart.destroy();
   const ctx = document.getElementById("incidentsChart");
@@ -250,6 +258,14 @@ export default {
   color: #212529;
 }
 
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
 .card {
   background: #fff;
   border: none;
@@ -275,6 +291,31 @@ export default {
 .kpi-value {
   font-size: 1.6rem;
   font-weight: bold;
+}
+
+.new-request-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--sonatrach-orange);
+  color: rgb(0, 0, 0);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(243, 146, 0, 0.3);
+}
+
+.new-request-btn:hover {
+  background-color: #e08600;
+  transform: translateY(-2px);
+}
+
+.new-request-btn i {
+  font-size: 1.1rem;
 }
 
 .bar-row {

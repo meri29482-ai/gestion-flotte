@@ -11,11 +11,13 @@ const multiUpload = upload.fields([
   { name: "controle_technique", maxCount: 1 }
 ]);
 
+// ✅ Routes véhicules
 router.post("/", multiUpload, vehiculeController.createVehicule);
 router.put("/:id", multiUpload, vehiculeController.updateVehicule);
+router.get("/disponibles", vehiculeController.getVehiculesDisponibles); // Spécifique avant /:id
 router.get("/:id/details", vehiculeController.getVehiculeDetails);
-router.get("/", vehiculeController.getAllVehicules);
 router.get("/:id", vehiculeController.getVehiculeById);
+router.get("/", vehiculeController.getAllVehicules);
 router.delete("/:id", vehiculeController.deleteVehicule);
 
 module.exports = router;

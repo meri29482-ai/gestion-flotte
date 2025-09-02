@@ -1,307 +1,426 @@
 <template>
-  <div class="dashboard-demandeur">
-  <div class="header-bar">
-    <h1>🎯 Tableau de bord - Demandeur</h1>
-    <div class="actions">
-      <button @click="goToNouvelleDemande">➕ Nouvelle Demande</button>
+  <div class="chef-dashboard">
+    <div class="dashboard-header">
+      <div>
+        <h1><i class="fas fa-chart-pie"></i> Tableau de bord - Chef de Département</h1>
+        <p>Vue d'ensemble de votre activité et de vos ressources</p>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div>{{ user.prenom }} {{ user.nom }}</div>
+      </div>
     </div>
-  </div>
+    <button @click="goToNouvelleDemande" class="new-request-btn">
+        <i class="bi bi-plus-circle"></i> Demande Véhicule
+      </button>
 
-    <div class="summary">
+    <aside class="menu">
+      <router-link to="/chefDepartement/signalements" class="signalement-link">
+        Avoir signalements <span class="arrow">➤</span>
+      </router-link>
+    </aside>
+
+    <!-- Cartes de résumé -->
+    <section class="summary">
+      <!-- Carte Utilisateurs -->
       <div class="card">
-        <h3>Total demandes</h3>
-        <p>{{ demandes.length }}</p>
+        <div class="card-header">
+          <h3>UTILISATEURS</h3>
+          <div class="card-icon"><i class="fas fa-users"></i></div>
+        </div>
+        <div class="stats-container">
+          <div class="stat-item">
+            <div class="stat-label"><div class="stat-icon"><i class="fas fa-list"></i></div><span>Total</span></div>
+            <div class="stat-value">{{ users.length }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><div class="stat-icon"><i class="fas fa-user-shield"></i></div><span>Administrateurs</span></div>
+            <div class="stat-value">{{ admins.length }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><div class="stat-icon"><i class="fas fa-user-tie"></i></div><span>Responsables Parc</span></div>
+            <div class="stat-value">{{ responsables.length }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><div class="stat-icon"><i class="fas fa-user-graduate"></i></div><span>Chefs Département</span></div>
+            <div class="stat-value">{{ chefs.length }}</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label"><div class="stat-icon"><i class="fas fa-user"></i></div><span>Chauffeurs</span></div>
+            <div class="stat-value">{{ chauffeurs.length }}</div>
+          </div>
+        </div>
       </div>
-      <div class="card orange">
-        <h3>En cours</h3>
-        <p>{{ demandes.filter(d => d.statut === 'En cours').length }}</p>
-      </div>
-      <div class="card green">
-        <h3>Terminées</h3>
-        <p>{{ demandes.filter(d => d.statut === 'Terminée').length }}</p>
-      </div>
-    </div>
 
-    <h2>📋 Dernières demandes</h2>
-    <table class="demandes-table">
-      <thead>
-        <tr>
-          <th>Numéro</th>
-          <th>Destination</th>
-          <th>Début</th>
-          <th>Fin</th>
-          <th>Statut</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="demande in demandes" :key="demande.id">
-          <td>{{ demande.numeroOrdre }}</td>
-          <td>{{ demande.destination }}</td>
-          <td>{{ demande.date_debut }}</td>
-          <td>{{ demande.date_fin }}</td>
-          <td>
-            <span :class="'badge ' + demande.statut.toLowerCase().replace('é', 'e')">
-              {{ demande.statut }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- Carte Véhicules -->
+      <div class="card">
+        <div class="card-header">
+          <h3>VÉHICULES</h3>
+          <div class="card-icon"><i class="fas fa-car"></i></div>
+        </div>
+        <div class="stats-container">
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-list"></i></div><span>Total</span></div><div class="stat-value">{{ vehicles.length }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><span>Disponible</span></div><div class="stat-value">{{ countVehicleStatus("DISPO") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-route"></i></div><span>En mission</span></div><div class="stat-value">{{ countVehicleStatus("EN_MISSION") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><span>Hors Service</span></div><div class="stat-value">{{ countVehicleStatus("HORS_SERVICE") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-tools"></i></div><span>En Maintenance</span></div><div class="stat-value">{{ countVehicleStatus("MAINTENANCE") }}</div></div>
+        </div>
+      </div>
+
+      <!-- Carte Chauffeurs -->
+      <div class="card">
+        <div class="card-header">
+          <h3>CHAUFFEURS</h3>
+          <div class="card-icon"><i class="fas fa-id-card-alt"></i></div>
+        </div>
+        <div class="stats-container">
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-list"></i></div><span>Total</span></div><div class="stat-value">{{ chauffeurs.length }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><span>Actifs</span></div><div class="stat-value">{{ countChauffeurStatus("dispo") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-route"></i></div><span>En mission</span></div><div class="stat-value">{{ countChauffeurStatus("en mission") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><span>Hors Service</span></div><div class="stat-value">{{ countChauffeurStatus("hors service") }}</div></div>
+        </div>
+      </div>
+
+      <!-- Carte Missions -->
+      <div class="card">
+        <div class="card-header">
+          <h3>MISSIONS</h3>
+          <div class="card-icon"><i class="fas fa-tasks"></i></div>
+        </div>
+        <div class="stats-container">
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-list"></i></div><span>Total</span></div><div class="stat-value">{{ missions.length }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-spinner"></i></div><span>En cours</span></div><div class="stat-value">{{ countMissionStatus("en cours") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-clock"></i></div><span>En attente</span></div><div class="stat-value">{{ countMissionStatus("en attente") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-ban"></i></div><span>Bloquées</span></div><div class="stat-value">{{ countMissionStatus("bloquer") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-times"></i></div><span>Annulées</span></div><div class="stat-value">{{ countMissionStatus("annuler") }}</div></div>
+        </div>
+      </div>
+
+      <!-- Carte Demandes avec sélection année -->
+      <div class="card">
+        <div class="card-header">
+          <h3>DEMANDES ({{ anneeSelectionnee }})</h3>
+          <div class="card-icon"><i class="fas fa-clipboard-list"></i></div>
+        </div>
+        <div class="card-body">
+          <label for="annee">Choisir année :</label>
+          <select v-model="anneeSelectionnee" id="annee" style="margin-bottom:10px;">
+            <option v-for="an in anneesDisponibles" :key="an" :value="an">{{ an }}</option>
+          </select>
+        </div>
+        <div class="stats-container">
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-list"></i></div><span>Total</span></div><div class="stat-value">{{ demandesFiltrees.length }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-spinner"></i></div><span>En cours</span></div><div class="stat-value">{{ countDemandeStatus("EN COURS") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-calendar-check"></i></div><span>Planifiées</span></div><div class="stat-value">{{ countDemandeStatus("PLANIFIER") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><span>Terminées</span></div><div class="stat-value">{{ countDemandeStatus("TERMINER") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><span>Rejetées</span></div><div class="stat-value">{{ countDemandeStatus("REJETER") }}</div></div>
+          <div class="stat-item"><div class="stat-label"><div class="stat-icon"><i class="fas fa-times"></i></div><span>Annulées</span></div><div class="stat-value">{{ countDemandeStatus("ANNULER") }}</div></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Graphique coût par véhicule -->
+    <section class="charts" style="margin-top: 30px;">
+      <VehicleCostChart v-if="vehicleCostData.length" :data="vehicleCostData" />
+      <p v-else>Aucune donnée de coût disponible</p>
+    </section>
   </div>
 </template>
 
+
 <script>
-import axios from 'axios';
+import axios from "axios";
+import VehicleCostChart from "./VehicleCostChart.vue";
 
 export default {
-  name: "DemandeurDashboard",
+  name: "ChefDashboard",
+  components: { VehicleCostChart },
   data() {
     return {
+      user: JSON.parse(localStorage.getItem("user") || "{}"),
+
+      users: [],
+      admins: [],
+      responsables: [],
+      chefs: [],
+      chauffeurs: [],
+
+      vehicles: [],
+      missions: [],
       demandes: [],
-      error: null
+      vehicleCostData: [],
+
+      // Année sélectionnée pour filtrer les demandes
+      anneeSelectionnee: 2025,
     };
   },
-  methods: {
-    goToNouvelleDemande() {
-      this.$router.push("/demandeur/nouvelle-demande");
+  computed: {
+    userInitials() {
+      if (this.user.prenom && this.user.nom) {
+        return this.user.prenom.charAt(0) + this.user.nom.charAt(0);
+      }
+      return "US";
     },
 
-    formatStatut(etat) {
-      switch (etat) {
-        case 'EN COURS': return 'En cours';
-        case 'PLANIFIER': return 'Planifiée';
-        case 'TERMINER': return 'Terminée';
-        case 'REJETER': return 'Rejetée';
-        default: return 'En attente';
-      }
+   
+
+
+    // Liste des années disponibles dans les demandes
+    anneesDisponibles() {
+      const annees = this.demandes.map(d => new Date(d.date_heure_debut).getFullYear());
+      return [...new Set(annees)].sort();
     },
 
-    async refresh() {
-      const token = localStorage.getItem("token");
-      const userData = localStorage.getItem("user");
-
-      if (!token || !userData) {
-        this.error = "⚠️ Utilisateur non identifié. Veuillez vous reconnecter.";
-        return;
-      }
-
-      try {
-        const response = await axios.get("http://localhost:3000/api/demandes/mes-demandes", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        this.demandes = response.data.map(d => ({
-          id: d.id,
-          numeroOrdre: d.n_ordre,
-          destination: d.destination,
-          date_debut: d.date_heure_debut?.split("T")[0],
-          date_fin: d.date_heure_fin?.split("T")[0],
-          statut: this.formatStatut(d.etat)
-        }));
-
-        this.error = null;
-
-      } catch (error) {
-        console.error("Erreur lors du chargement des demandes :", error);
-        this.error = "❌ Impossible de charger les demandes.";
-      }
-    }
+    // Demandes filtrées selon l'année sélectionnée
+    demandesFiltrees() {
+      return this.demandes.filter(d => new Date(d.date_heure_debut).getFullYear() === this.anneeSelectionnee);
+    },
   },
-  mounted() {
-    this.refresh(); // Charger les données dès le montage du composant
-  }
+  async created() {
+    await this.fetchData();
+    await this.fetchVehicleCost();
+  },
+  methods: {
+    async fetchVehicleCost() {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3000/api/interventions/cout-par-vehicule", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        this.vehicleCostData = res.data;
+      } catch (error) {
+        console.error("❌ Erreur fetchVehicleCost :", error);
+      }
+    },
+
+     goToNouvelleDemande() {
+      this.$router.push("/chefDepartement/nouvelle-demande");
+    },
+
+    async fetchData() {
+      try {
+        const token = localStorage.getItem("token");
+
+        const [adminsRes, responsablesRes, chefsRes, chauffeursRes] = await Promise.all([
+          axios.get("http://localhost:3000/api/utilisateurs/role/admin", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:3000/api/utilisateurs/role/responsable_parc", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:3000/api/utilisateurs/role/chef_departement", { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get("http://localhost:3000/api/chauffeurs", { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        this.admins = adminsRes.data;
+        this.responsables = responsablesRes.data;
+        this.chefs = chefsRes.data;
+        this.chauffeurs = chauffeursRes.data;
+        this.users = [...this.admins, ...this.responsables, ...this.chefs, ...this.chauffeurs];
+
+        const vehiclesRes = await axios.get("http://localhost:3000/api/vehicules", { headers: { Authorization: `Bearer ${token}` } });
+        this.vehicles = vehiclesRes.data;
+
+        const missionsRes = await axios.get("http://localhost:3000/api/missions", { headers: { Authorization: `Bearer ${token}` } });
+        this.missions = missionsRes.data;
+
+        const demandesRes = await axios.get("http://localhost:3000/api/demandes", { headers: { Authorization: `Bearer ${token}` } });
+        this.demandes = demandesRes.data;
+      } catch (error) {
+        console.error("❌ Erreur récupération données :", error);
+      }
+    },
+
+    // Comptages pour véhicules, chauffeurs, missions et demandes
+    countVehicleStatus(etat) {
+      return this.vehicles.filter(v => v.etat.toUpperCase() === etat.toUpperCase()).length;
+    },
+    countChauffeurStatus(etat) {
+      return this.chauffeurs.filter(c => c.etat.toLowerCase() === etat.toLowerCase()).length;
+    },
+    countMissionStatus(stat) {
+      return this.missions.filter(m => m.etat.toLowerCase() === stat.toLowerCase()).length;
+    },
+    countDemandeStatus(stat) {
+      // On compte uniquement sur les demandes filtrées par année
+      return this.demandesFiltrees.filter(d => d.etat.toUpperCase() === stat.toUpperCase()).length;
+    },
+  },
 };
 </script>
 
-<style scoped>
-.dashboard-demandeur {
-  max-width: 1200px;
-  margin: auto;
-  padding: 2rem;
-  font-family: 'Poppins', sans-serif;
-  color: #2c3e50;
-  background-color: #f8f9fa;
+<style>
+   :root {
+  --sonatrack-primary: #FF7B00;
+  --sonatrack-dark: #2C2C2C;
+  --sonatrack-gray-light: #E0E0E0;
+  --sonatrack-white: #FFFFFF;
 }
-.header-bar {
+
+.chef-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+.dashboard-header {
+  background: linear-gradient(135deg, var(--sonatrack-primary), #E06D00);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 2rem;
 }
 
-.header-bar h1 {
-  margin: 0;
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #333;
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 10px;
+  border-radius: 50px;
+}
+.arrow-link {
+  margin-left: 15px;
+  font-size: 22px;
+  color: #007bff;
+  cursor: pointer;
+}
+.arrow-link:hover {
+  color: #0056b3;
 }
 
-h1 {
-  color: #333;
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
+.new-request-btn {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
-.actions button {
-  padding: 0.6rem 1.4rem;
-  background-color: #2d3436;
-  color: #fff;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--sonatrach-orange);
+  color: rgb(0, 0, 0);
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(243, 146, 0, 0.3);
 }
 
-.actions button:hover {
-  background-color: #000;
+.new-request-btn:hover {
+  background-color: #e08600;
+  transform: translateY(-2px);
 }
 
-.summary {
+.new-request-btn i {
+  font-size: 1.1rem;
+}
+
+.user-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: white;
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  justify-content: center;
+  align-items: center;
+  color: var(--sonatrack-primary);
+  font-weight: bold;
 }
-
-.card {
-  flex: 1;
-  min-width: 200px;
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+/* Flèche */
+.arrow-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-weight: bold;
+  text-decoration: none;
+  color: #007bff;
+  margin: 10px 0 30px;
   transition: transform 0.2s ease;
 }
 
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.card {
+  background-color: var(--sonatrack-white);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  border-top: 4px solid var(--sonatrack-primary);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
 }
 
-.card.orange {
-  border-left: 5px solid #ffa726;
-}
-
-.card.green {
-  border-left: 5px solid #4caf50;
-}
-
-.card h3 {
-  margin: 0;
+.card-header h3 {
   font-size: 1rem;
-  color: #888;
-}
-
-.card p {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-top: 0.3rem;
-  color: #2c3e50;
-}
-
-h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.demandes-table {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.demandes-table th,
-.demandes-table td {
-  padding: 0.9rem 1rem;
-  text-align: left;
-}
-
-.demandes-table thead {
-  background-color: #f1f1f1;
-  color: #333;
-}
-
-.demandes-table tbody tr {
-  border-top: 1px solid #eee;
-  transition: background-color 0.2s;
-}
-
-.demandes-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
   font-weight: 600;
-  text-transform: capitalize;
-  display: inline-block;
-  color: #fff;
+  margin-bottom: 10px;
 }
 
-.badge.en {
-  background-color: #2196f3;
-}
-.badge.planifiee {
-  background-color: #ff9800;
-}
-.badge.terminee {
-  background-color: #4caf50;
-}
-.badge.rejetee {
-  background-color: #f44336;
-}
-.badge.en.attente {
-  background-color: #9e9e9e;
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--sonatrack-gray-light);
+  padding: 6px 0;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
   .summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
     flex-direction: column;
-  }
-
-  .actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actions button {
-    width: 100%;
-  }
-
-  .demandes-table {
-    font-size: 0.9rem;
-  }
-
-  .card {
-    padding: 1rem;
+    text-align: center;
+    gap: 10px;
   }
 }
+/* pas de "scoped" */
+.menu {
+  display: flex;
+  justify-content: flex-end; /* place le contenu à droite */
+  padding: 10px;
+}
 
-</style>
+.signalement-link {
+  color: #0c0c0cff;          /* orange */
+  font-weight: bold;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #a5a3a0ff;     /* fond clair */
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.signalement-link:hover {
+  background: #ffe600ff;
+  color: white;
+}
+
+.arrow {
+  font-size: 1.2em;
+}
+
+
+    </style>
